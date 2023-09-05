@@ -78,6 +78,6 @@
       "qtVersion": 6
     }
   },
-  "name": "obs-composite-blur",
+  "name": "obs-stroke",
   "version": "0.0.1"
 }
