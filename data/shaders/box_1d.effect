@@ -1,0 +1,71 @@
+#define MAX_RADIUS 128u
+
+uniform float4x4 ViewProj;
+uniform texture2d image;
+
+uniform float2 texel_step;
+uniform float radius;
+
+sampler_state textureSampler{
+    Filter = Linear;
+    AddressU = Clamp;
+    AddressV = Clamp;
+    MinLOD = 0;
+    MaxLOD = 0;
+};
+
+struct VertData {
+    float4 pos : POSITION;
+    float2 uv : TEXCOORD0;
+};
+
+VertData mainTransform(VertData v_in)
+{
+    v_in.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+    return v_in;
+}
+
+float4 mainImage(VertData v_in) : TARGET
+{
+    // 1. Sample incoming pixel
+    float4 col = image.Sample(textureSampler, v_in.uv);
+
+    // 2. March out from source pixel.  Step by 2 pixels, and add
+    //    2x the average of pixel i and i+1.  This uses GPU hardware
+    //    pixel averaging to cut the number of samples needed in half.
+    for(uint i=1u; i<=MAX_RADIUS; i+=2u) {
+        if(i+1u > radius) {
+            break;
+        }
+        float offset = float(i)+0.5;
+        col += 2.0f*image.Sample(textureSampler, v_in.uv + (offset * texel_step));
+        col += 2.0f*image.Sample(textureSampler, v_in.uv - (offset * texel_step));
+    }
+    // 3. Solve for the residual.  If the integer portion of radius is
+    //    even, this is just the decimal.  If integer portion is odd,
+    //    this is 1 + decimal.  E.g.- for a radius of 37.2, residual is
+    //    1.2, and for a radius of 36.4, residual is 0.4
+    float fradius = floor(radius);
+    float residual = radius-(fradius-float(int(fradius)%2));
+
+    // 4. Sample at radius - residual/2.0, and scale the resulting color
+    //    by the residual.
+    if(residual > 0.0f) {
+        float offset = (radius - residual/2.0f);
+        col += image.Sample(textureSampler, v_in.uv + (offset * texel_step)) * residual;
+        col += image.Sample(textureSampler, v_in.uv - (offset * texel_step)) * residual;
+    }
+
+    // 5. Normalize the color by the total pixels sampled.
+    col /= (2.0f * radius + 1.0f);
+    return col;
+}
+
+technique Draw
+{
+    pass
+    {
+        vertex_shader = mainTransform(v_in);
+        pixel_shader = mainImage(v_in);
+    }
+}
