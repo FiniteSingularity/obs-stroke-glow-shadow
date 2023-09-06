@@ -25,7 +25,13 @@ target_sources(${PROJECT_NAME} PRIVATE
 	src/obs-stroke-plugin.c
 	src/obs-stroke-filter.h
 	src/obs-stroke.h
-	src/version.h)
+	src/obs-utils.c
+	src/obs-utils.h
+	src/stroke.c
+	src/stroke.h
+	src/version.h
+	src/blur/alpha-blur.c
+	src/blur/alpha-blur.h)
 
 if(BUILD_OUT_OF_TREE)
 	find_package(libobs REQUIRED)

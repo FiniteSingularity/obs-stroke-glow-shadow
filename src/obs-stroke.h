@@ -13,11 +13,8 @@ struct stroke_filter_data {
 	obs_source_t *context;
 
 	// Effects
-	gs_effect_t *effect;
-	gs_effect_t *effect_2;
-	gs_effect_t *composite_effect;
-	gs_effect_t *mix_effect;
-	gs_effect_t *effect_mask_effect;
+	gs_effect_t *effect_alpha_blur;
+	gs_effect_t *effect_stroke;
 
 	// Render pipeline
 	bool input_rendered;
@@ -25,10 +22,9 @@ struct stroke_filter_data {
 	bool output_rendered;
 	gs_texrender_t *output_texrender;
 	// Frame Buffers
-	gs_texrender_t *render;
-	gs_texrender_t *render2;
-	// Renderer for composite render step
-	gs_texrender_t *composite_render;
+	gs_texrender_t *alpha_blur_pass_1;
+	gs_texrender_t *alpha_blur_output;
+	gs_texrender_t *mix_output;
 
 	bool rendering;
 	bool reload;
@@ -37,8 +33,20 @@ struct stroke_filter_data {
 	uint32_t width;
 	uint32_t height;
 
+	// Parameters
+	float stroke_size;
+	float stroke_distance;
+	struct vec4 stroke_color;
+
+	gs_eparam_t *param_blur_radius;
+	gs_eparam_t *param_blur_texel_step;
+	gs_eparam_t *param_stroke_texel_step;
+	gs_eparam_t *param_stroke_stroke_thickness;
+	gs_eparam_t *param_stroke_color;
+
+
 	// Callback Functions
-	// void (*video_render)(stroke_filter_data_t *filter);
-	// void (*load_effect)(stroke_filter_data_t *filter);
-	// void (*update)(stroke_filter_data_t *filter);
+	void (*video_render)(stroke_filter_data_t *filter);
+	void (*load_effect)(stroke_filter_data_t *filter);
+	void (*update)(stroke_filter_data_t *filter);
 };

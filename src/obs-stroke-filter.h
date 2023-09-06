@@ -10,6 +10,7 @@
 // #include <stdio.h>
 
 #include "version.h"
+#include "obs-stroke.h"
 #include "obs-utils.h"
 
 static const char *stroke_filter_name(void *unused);
@@ -22,3 +23,6 @@ static void stroke_filter_video_render(void *data, gs_effect_t *effect);
 static obs_properties_t *stroke_filter_properties(void *data);
 static void stroke_filter_video_tick(void *data, float seconds);
 static void stroke_filter_defaults(obs_data_t *settings);
+static void get_input_source(stroke_filter_data_t *filter);
+static void draw_output_to_source(stroke_filter_data_t *filter);
+static void load_effects(stroke_filter_data_t *filter);

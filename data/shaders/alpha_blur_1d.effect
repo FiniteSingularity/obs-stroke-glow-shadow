@@ -1,4 +1,5 @@
 #define MAX_RADIUS 128u
+#define EPS 0.0000001
 
 uniform float4x4 ViewProj;
 uniform texture2d image;
@@ -28,37 +29,42 @@ VertData mainTransform(VertData v_in)
 float4 mainImage(VertData v_in) : TARGET
 {
     // 1. Sample incoming pixel
+    float total_weight = 1.0;
     float4 col = image.Sample(textureSampler, v_in.uv);
 
     // 2. March out from source pixel.  Step by 2 pixels, and add
     //    2x the average of pixel i and i+1.  This uses GPU hardware
     //    pixel averaging to cut the number of samples needed in half.
     for(uint i=1u; i<=MAX_RADIUS; i+=2u) {
-        if(i+1u > radius) {
+        if(float(i+1u) > radius) {
             break;
         }
-        float offset = float(i)+0.5;
-        col += 2.0f*image.Sample(textureSampler, v_in.uv + (offset * texel_step));
-        col += 2.0f*image.Sample(textureSampler, v_in.uv - (offset * texel_step));
+        float offset = float(i)+0.5f;
+        float weight = lerp(1.0f, 0.0f, offset/(radius+1.0f));
+
+        col += 2.0f * weight * image.Sample(textureSampler, v_in.uv + (offset * texel_step));
+        col += 2.0f * weight * image.Sample(textureSampler, v_in.uv - (offset * texel_step));
+        total_weight += 4.0f * weight;
     }
     // 3. Solve for the residual.  If the integer portion of radius is
     //    even, this is just the decimal.  If integer portion is odd,
     //    this is 1 + decimal.  E.g.- for a radius of 37.2, residual is
     //    1.2, and for a radius of 36.4, residual is 0.4
-    float fradius = floor(radius);
-    float residual = radius-(fradius-float(int(fradius)%2));
+    // float fradius = floor(radius);
+    // float residual = radius-(fradius-float(int(fradius)%2));
 
-    // 4. Sample at radius - residual/2.0, and scale the resulting color
-    //    by the residual.
-    if(residual > 0.0f) {
-        float offset = (radius - residual/2.0f);
-        col += image.Sample(textureSampler, v_in.uv + (offset * texel_step)) * residual;
-        col += image.Sample(textureSampler, v_in.uv - (offset * texel_step)) * residual;
-    }
+    // // 4. Sample at radius - residual/2.0, and scale the resulting color
+    // //    by the residual.
+    // if(residual > 0.0f) {
+    //     float offset = (radius - residual/2.0f);
+    //     col += image.Sample(textureSampler, v_in.uv + (offset * texel_step)) * residual;
+    //     col += image.Sample(textureSampler, v_in.uv - (offset * texel_step)) * residual;
+    // }
 
     // 5. Normalize the color by the total pixels sampled.
-    col /= (2.0f * radius + 1.0f);
-    return col;
+    col /= total_weight;
+    return float4(1.0, 1.0, 1.0, col.a);
+    //return col;
 }
 
 technique Draw
