@@ -189,9 +189,6 @@ static void get_input_source(stroke_filter_data_t *filter)
 		gs_texrender_end(filter->input_texrender);
 		gs_blend_state_pop();
 	}
-
-	gs_texture_t *texture =
-		gs_texrender_get_texture(filter->input_texrender);
 }
 
 static void draw_output_to_source(stroke_filter_data_t *filter)
