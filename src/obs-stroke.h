@@ -6,6 +6,13 @@
 	"<a href=\"https://github.com/finitesingularity/obs-stroke/\">Stroke</a> (" PROJECT_VERSION \
 	") by <a href=\"https://twitch.tv/finitesingularity\">FiniteSingularity</a>"
 
+#define STROKE_FILL_TYPE_COLOR 1
+#define STROKE_FILL_TYPE_COLOR_LABEL "StrokeFilter.ColorFill"
+#define STROKE_FILL_TYPE_SOURCE 2
+#define STROKE_FILL_TYPE_SOURCE_LABEL "StrokeFilter.SourceFill"
+#define STROKE_FILL_TYPE_IMAGE 3
+#define STROKE_FILE_TYPE_IMAGE_LABEL "StrokeFilter.ImageFill"
+
 struct stroke_filter_data;
 typedef struct stroke_filter_data stroke_filter_data_t;
 
@@ -50,3 +57,4 @@ struct stroke_filter_data {
 	void (*load_effect)(stroke_filter_data_t *filter);
 	void (*update)(stroke_filter_data_t *filter);
 };
+

@@ -144,6 +144,18 @@ static obs_properties_t *stroke_filter_properties(void *data)
 		props, "stroke_color",
 		obs_module_text("StrokeFilter.StrokeColor"));
 
+	obs_property_t *stroke_fill_method_list = obs_properties_add_list(
+		props, "stroke_fill_method",
+		obs_module_text("StrokeFilter.StrokeFill"),
+		OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
+
+	obs_property_list_add_int(stroke_fill_method_list,
+				  obs_module_text(STROKE_FILL_TYPE_COLOR_LABEL),
+				  STROKE_FILL_TYPE_COLOR);
+	obs_property_list_add_int(stroke_fill_method_list,
+				  obs_module_text(STROKE_FILL_TYPE_SOURCE_LABEL),
+				  STROKE_FILL_TYPE_SOURCE);
+
 	return props;
 }
 
@@ -166,6 +178,7 @@ static void stroke_filter_defaults(obs_data_t *settings)
 {
 	// Example default set.
 	obs_data_set_default_double(settings, "stroke_size", 4.0);
+	obs_data_set_default_int(settings, "stroke_fill_method", STROKE_FILL_TYPE_COLOR);
 }
 
 static void get_input_source(stroke_filter_data_t *filter)
