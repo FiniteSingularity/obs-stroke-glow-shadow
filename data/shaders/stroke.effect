@@ -29,14 +29,14 @@ VertData mainTransform(VertData v_in)
 
 float4 mainImage(VertData v_in) : TARGET
 {
-    // 1. Sample incoming pixel
-    //float4 col = image.Sample(textureSampler, v_in.uv);
     float a = (blur_mask.Sample(textureSampler, v_in.uv)).a;
+    float stroke = color.a*(ceil(a-0.000001) * ceil(a));
 
+    float4 img_col = image.Sample(textureSampler, v_in.uv);
+    float4 stroke_col = float4(color.r, color.g, color.b, stroke);
 
-    //return float4(1.0, 1.0, 1.0, a);
-    return float4(color.r, color.g, color.b, color.a*(ceil(a-0.000001) * round(1.0-a)));
-    //return alpha_mask;
+    img_col += (1.0 - img_col.a) * float4(stroke_col.rgb, 1.0) * stroke_col.a;
+    return img_col;
 }
 
 technique Draw
