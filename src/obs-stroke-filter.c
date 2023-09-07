@@ -101,7 +101,7 @@ static void stroke_filter_video_render(void *data, gs_effect_t *effect)
 	stroke_filter_data_t *filter = data;
 
 	if (filter->rendered) {
-		//draw_output_to_source(filter);
+		draw_output_to_source(filter);
 		return;
 	}
 
