@@ -21,6 +21,8 @@ add_library(${PROJECT_NAME} MODULE)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in ${CMAKE_CURRENT_SOURCE_DIR}/src/version.h)
 
 target_sources(${PROJECT_NAME} PRIVATE
+	src/anti-alias.c
+	src/anti-alias.h
 	src/obs-stroke-filter.c
 	src/obs-stroke-plugin.c
 	src/obs-stroke-filter.h

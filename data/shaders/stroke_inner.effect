@@ -1,3 +1,4 @@
+#define THRESHOLD 0.5f
 #define EPS 0.000000000001
 
 uniform float4x4 ViewProj;
@@ -31,7 +32,7 @@ VertData mainTransform(VertData v_in)
 float4 mainImageFilled(VertData v_in) : TARGET
 {
     float a = (blur_mask.Sample(textureSampler, v_in.uv)).a;
-    float stroke = step(EPS, a); // If less than EPS, 0, otherwise 1.0
+    float stroke = step(EPS, 1.0 - a);
     return float4(stroke, stroke, stroke, 1.0);
 }
 
@@ -39,7 +40,7 @@ float4 mainImageOffsetInline(VertData v_in) : TARGET
 {
     float a = (blur_mask.Sample(textureSampler, v_in.uv)).a;
     float ratio = 0.5 * stroke_thickness/(stroke_offset+stroke_thickness);
-    float stroke = step(EPS, a) - step(ratio, a);
+    float stroke = step(EPS, 1.0 - a) - step(ratio, 1.0 - a);
     return float4(stroke, stroke, stroke, 1.0);
 }
 
@@ -47,7 +48,7 @@ float4 mainImageOffsetSubtract(VertData v_in) : TARGET
 {
     float a_outer = (blur_mask.Sample(textureSampler, v_in.uv)).a;
     float a_inner = (blur_mask_inner.Sample(textureSampler, v_in.uv)).a;
-    float stroke = step(EPS, a_outer) - step(EPS, a_inner);
+    float stroke = step(EPS, 1.0 - a_outer) - step(EPS, 1.0 - a_inner);
     return float4(stroke, stroke, stroke, 1.0);
 }
 

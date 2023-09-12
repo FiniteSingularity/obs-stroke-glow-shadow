@@ -126,3 +126,11 @@ char *load_shader_from_file(const char *file_name)
 	strlist_free(lines);
 	return shader_file.array;
 }
+
+void setting_visibility(const char *prop_name, bool visible,
+			       obs_properties_t *props)
+{
+	obs_property_t *p = obs_properties_get(props, prop_name);
+	obs_property_set_enabled(p, visible);
+	obs_property_set_visible(p, visible);
+}

@@ -6,6 +6,25 @@
 	"<a href=\"https://github.com/finitesingularity/obs-stroke/\">Stroke</a> (" PROJECT_VERSION \
 	") by <a href=\"https://twitch.tv/finitesingularity\">FiniteSingularity</a>"
 
+#define DEFAULT_COLOR 4294967295
+
+#define STROKE_FILL_TYPE_COLOR 1
+#define STROKE_FILL_TYPE_COLOR_LABEL "StrokeFilter.ColorFill"
+#define STROKE_FILL_TYPE_SOURCE 2
+#define STROKE_FILL_TYPE_SOURCE_LABEL "StrokeFilter.SourceFill"
+#define STROKE_FILL_TYPE_IMAGE 3
+#define STROKE_FILL_TYPE_IMAGE_LABEL "StrokeFilter.ImageFill"
+
+#define OFFSET_QUALITY_NORMAL 1
+#define OFFSET_QUALITY_NORMAL_LABEL "StrokeFilter.OffsetQualityNormal"
+#define OFFSET_QUALITY_HIGH 2
+#define OFFSET_QUALITY_HIGH_LABEL "StrokeFilter.OffsetQualityHigh"
+
+#define STROKE_POSITION_OUTER 1
+#define STROKE_POSITION_OUTER_LABEL "StrokeFilter.StrokePositionOuter"
+#define STROKE_POSITION_INNER 2
+#define STROKE_POSITION_INNER_LABEL "StrokeFilter.StrokePositionInner"
+
 struct stroke_filter_data;
 typedef struct stroke_filter_data stroke_filter_data_t;
 
@@ -15,6 +34,9 @@ struct stroke_filter_data {
 	// Effects
 	gs_effect_t *effect_alpha_blur;
 	gs_effect_t *effect_stroke;
+	gs_effect_t *effect_stroke_inner;
+	gs_effect_t *effect_anti_alias;
+	gs_effect_t *effect_fill_stroke;
 
 	// Render pipeline
 	bool input_rendered;
@@ -24,7 +46,8 @@ struct stroke_filter_data {
 	// Frame Buffers
 	gs_texrender_t *alpha_blur_pass_1;
 	gs_texrender_t *alpha_blur_output;
-	gs_texrender_t *mix_output;
+	gs_texrender_t *alpha_blur_output_2;
+	gs_texrender_t *stroke_mask;
 
 	bool rendering;
 	bool reload;
@@ -35,14 +58,36 @@ struct stroke_filter_data {
 
 	// Parameters
 	float stroke_size;
+	float stroke_offset;
 	float stroke_distance;
+	bool anti_alias;
+
 	struct vec4 stroke_color;
+	uint32_t fill_type;
+	obs_weak_source_t *fill_source_source;
+
+	uint32_t offset_quality;
+	uint32_t stroke_position;
 
 	gs_eparam_t *param_blur_radius;
 	gs_eparam_t *param_blur_texel_step;
 	gs_eparam_t *param_stroke_texel_step;
 	gs_eparam_t *param_stroke_stroke_thickness;
-	gs_eparam_t *param_stroke_color;
+	gs_eparam_t *param_stroke_offset;
+
+	gs_eparam_t *param_stroke_inner_texel_step;
+	gs_eparam_t *param_stroke_inner_stroke_thickness;
+	gs_eparam_t *param_stroke_inner_offset;
+
+	gs_eparam_t *param_fill_stroke_image;
+	gs_eparam_t *param_fill_stroke_stroke_mask;
+	gs_eparam_t *param_fill_stroke_fill_source;
+	gs_eparam_t *param_fill_stroke_fill_color;
+
+	gs_eparam_t *param_aa_texel_step;
+	gs_eparam_t *param_aa_size;
+	gs_eparam_t *param_aa_image;
+
 
 
 	// Callback Functions
@@ -50,3 +95,4 @@ struct stroke_filter_data {
 	void (*load_effect)(stroke_filter_data_t *filter);
 	void (*update)(stroke_filter_data_t *filter);
 };
+
