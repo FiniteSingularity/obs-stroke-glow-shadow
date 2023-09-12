@@ -4,4 +4,4 @@
     <i align="center">A feature rich and efficient stroke plugin for OBS</i>
 </p>
 
-<h2>Awesome readme goes here!</h2>
+<h2>Pre-Proudction.  Readme Coming Soon!</h2>
