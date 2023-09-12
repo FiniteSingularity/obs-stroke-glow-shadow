@@ -15,3 +15,5 @@ extern bool add_source_to_list(void *data, obs_source_t *source);
 gs_effect_t *load_shader_effect(gs_effect_t *effect,
 				const char *effect_file_path);
 extern char *load_shader_from_file(const char *file_name);
+extern void setting_visibility(const char *prop_name, bool visible,
+			       obs_properties_t *props);

@@ -50,16 +50,18 @@ float4 mainImage(VertData v_in) : TARGET
     //    even, this is just the decimal.  If integer portion is odd,
     //    this is 1 + decimal.  E.g.- for a radius of 37.2, residual is
     //    1.2, and for a radius of 36.4, residual is 0.4
-    // float fradius = floor(radius);
-    // float residual = radius-(fradius-float(int(fradius)%2));
+    float fradius = floor(radius);
+    float residual = radius-(fradius-float(int(fradius)%2));
 
     // // 4. Sample at radius - residual/2.0, and scale the resulting color
     // //    by the residual.
-    // if(residual > 0.0f) {
-    //     float offset = (radius - residual/2.0f);
-    //     col += image.Sample(textureSampler, v_in.uv + (offset * texel_step)) * residual;
-    //     col += image.Sample(textureSampler, v_in.uv - (offset * texel_step)) * residual;
-    // }
+    if(residual > EPS) {
+         float offset = radius;
+	 float weight = lerp(1.0f, 0.0f, offset / (radius + 1.0f));
+         col += weight * image.Sample(textureSampler, v_in.uv + (offset * texel_step));
+         col += weight * image.Sample(textureSampler, v_in.uv - (offset * texel_step));
+	 total_weight += 2.0f * weight;
+    }
 
     // 5. Normalize the color by the total pixels sampled.
     col /= total_weight;

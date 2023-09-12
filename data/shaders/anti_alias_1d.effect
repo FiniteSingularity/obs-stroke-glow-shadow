@@ -1,0 +1,59 @@
+uniform float4x4 ViewProj;
+uniform texture2d image;
+
+uniform float2 texel_step;
+uniform int size = 1;
+
+sampler_state textureSampler{
+    Filter = Linear;
+    AddressU = Clamp;
+    AddressV = Clamp;
+    MinLOD = 0;
+    MaxLOD = 0;
+};
+
+struct VertData {
+    float4 pos : POSITION;
+    float2 uv : TEXCOORD0;
+};
+
+VertData mainTransform(VertData v_in)
+{
+    v_in.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+    return v_in;
+}
+
+float4 mainImage(VertData v_in) : TARGET
+{
+	//float4 col = image.Sample(textureSampler, v_in.uv);
+	//float step_size = 0.5f / (float) size;
+	//for (int i = 1; i <= size; i++)
+	//{
+	//	col += image.Sample(textureSampler, v_in.uv + texel_step * (float) i * step_size);
+	//	col += image.Sample(textureSampler, v_in.uv - texel_step * (float) i * step_size);
+	//}
+	//col /= ((float)size * 2.0 + 1.0);
+	//return col;
+
+	float step_size = 1.0f / (float) size;
+	float4 col = float4(0.0, 0.0, 0.0, 0.0);
+	for (float i = -0.5; i < 0.51; i+=step_size)
+	{
+		for (float j = -0.5; j < 0.51; j+=step_size)
+		{
+			col += image.Sample(textureSampler, v_in.uv + texel_step * float2(i, j));
+		}
+
+	}
+	col /= (float) size * (float) size;
+	return col;
+}
+
+technique Draw
+{
+    pass
+    {
+        vertex_shader = mainTransform(v_in);
+        pixel_shader = mainImage(v_in);
+    }
+}

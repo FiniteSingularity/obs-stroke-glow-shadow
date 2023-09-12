@@ -1,6 +1,7 @@
 uniform float4x4 ViewProj;
 uniform texture2d image;
-uniform texture2d image2;
+uniform texture2d stroke_mask;
+uniform texture2d fill_source;
 
 uniform float ratio;
 
