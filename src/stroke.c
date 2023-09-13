@@ -144,8 +144,6 @@ void render_stroke_filter(stroke_filter_data_t *data)
 				      blur_mask_offset_texture);
 	}
 
-	gs_texrender_t *source_render = NULL;
-
 	const char *offset_type = data->stroke_offset < 0.99f ? "Filled"
 				  : data->offset_quality ==
 						  OFFSET_QUALITY_NORMAL
