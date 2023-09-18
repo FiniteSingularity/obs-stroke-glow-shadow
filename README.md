@@ -25,5 +25,6 @@
 wget https://github.com/FiniteSingularity/obs-stroke-glow-shadow/releases/download/v1.0.2/obs-stroke-0.0.1a-ubuntu-XX.04.tar.gz.zip
 unzip obs-stroke-0.0.1a-ubuntu-XX.04.tar.gz.zip
 tar -zxf obs-stroke-(DATE)-(HASH)-ubuntu-XX.04.tar.gz
+mkdir ~/.config/obs-studio/plugins
 mv obs-stroke ~/.config/obs-studio/plugins
 ```
