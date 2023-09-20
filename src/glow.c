@@ -95,10 +95,6 @@ void render_glow_filter(glow_filter_data_t *data)
 	 		    source_render, base_width, base_height, space)) {
 	 		const float w = (float)base_width;
 	 		const float h = (float)base_height;
-	 		uint32_t flags = obs_source_get_output_flags(source);
-	 		const bool custom_draw =
-	 			(flags & OBS_SOURCE_CUSTOM_DRAW) != 0;
-	 		const bool async = (flags & OBS_SOURCE_ASYNC) != 0;
 	 		struct vec4 clear_color;
 
 	 		vec4_zero(&clear_color);
