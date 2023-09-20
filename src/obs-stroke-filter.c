@@ -113,12 +113,14 @@ static void stroke_filter_update(void *data, obs_data_t *settings)
 		(float)obs_data_get_double(settings, "stroke_offset");
 
 	vec4_from_rgba(&filter->stroke_color,
-		       (uint32_t)obs_data_get_int(settings, "stroke_fill_color"));
+		       (uint32_t)obs_data_get_int(settings,
+						  "stroke_fill_color"));
 
 	filter->fill_type =
 		(uint32_t)obs_data_get_int(settings, "stroke_fill_type");
 
-	filter->offset_quality = (uint32_t)obs_data_get_int(settings, "stroke_offset_quality");
+	filter->offset_quality =
+		(uint32_t)obs_data_get_int(settings, "stroke_offset_quality");
 	filter->stroke_position =
 		(uint32_t)obs_data_get_int(settings, "stroke_position");
 	filter->anti_alias = obs_data_get_bool(settings, "anti_alias");
@@ -167,13 +169,10 @@ static void stroke_filter_video_render(void *data, gs_effect_t *effect)
 
 	// 2. Apply effect to texture, and render texture to video
 	alpha_blur(filter->stroke_size + filter->stroke_offset,
-		   filter->alpha_blur_data,
-		   filter->input_texrender,
-		   filter->alpha_blur_data->alpha_blur_output
-	);
+		   filter->alpha_blur_data, filter->input_texrender,
+		   filter->alpha_blur_data->alpha_blur_output);
 	if (filter->offset_quality == OFFSET_QUALITY_HIGH) {
-		alpha_blur(filter->stroke_offset,
-			   filter->alpha_blur_data,
+		alpha_blur(filter->stroke_offset, filter->alpha_blur_data,
 			   filter->input_texrender,
 			   filter->alpha_blur_data->alpha_blur_output_2);
 	}
@@ -222,8 +221,8 @@ static obs_properties_t *stroke_filter_properties(void *data)
 
 	obs_property_t *stroke_offset_quality_list = obs_properties_add_list(
 		props, "stroke_offset_quality",
-		obs_module_text("StrokeFilter.StrokeOffsetQuality"), OBS_COMBO_TYPE_LIST,
-		OBS_COMBO_FORMAT_INT);
+		obs_module_text("StrokeFilter.StrokeOffsetQuality"),
+		OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
 
 	obs_property_list_add_int(stroke_offset_quality_list,
 				  obs_module_text(OFFSET_QUALITY_NORMAL_LABEL),
@@ -237,13 +236,12 @@ static obs_properties_t *stroke_filter_properties(void *data)
 
 	obs_property_t *stroke_fill_method_list = obs_properties_add_list(
 		props, "stroke_fill_type",
-		obs_module_text("StrokeFilter.StrokeFill"),
-		OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
+		obs_module_text("StrokeFilter.StrokeFill"), OBS_COMBO_TYPE_LIST,
+		OBS_COMBO_FORMAT_INT);
 
-	obs_property_list_add_int(
-		stroke_fill_method_list,
-		obs_module_text(STROKE_FILL_TYPE_COLOR_LABEL),
-		STROKE_FILL_TYPE_COLOR);
+	obs_property_list_add_int(stroke_fill_method_list,
+				  obs_module_text(STROKE_FILL_TYPE_COLOR_LABEL),
+				  STROKE_FILL_TYPE_COLOR);
 	obs_property_list_add_int(
 		stroke_fill_method_list,
 		obs_module_text(STROKE_FILL_TYPE_SOURCE_LABEL),
@@ -262,8 +260,7 @@ static obs_properties_t *stroke_filter_properties(void *data)
 
 	obs_properties_add_path(
 		props, "stroke_fill_image",
-		obs_module_text("StrokeFilter.ImageFill"),
-		OBS_PATH_FILE,
+		obs_module_text("StrokeFilter.ImageFill"), OBS_PATH_FILE,
 		"Textures (*.bmp *.tga *.png *.jpeg *.jpg *.gif);;", NULL);
 
 	obs_property_t *stroke_fill_source_source = obs_properties_add_list(
@@ -273,6 +270,9 @@ static obs_properties_t *stroke_filter_properties(void *data)
 	obs_property_list_add_string(stroke_fill_source_source, "None", "");
 	obs_enum_sources(add_source_to_list, stroke_fill_source_source);
 	obs_enum_scenes(add_source_to_list, stroke_fill_source_source);
+
+	obs_properties_add_text(props, "plugin_info", PLUGIN_INFO,
+				OBS_TEXT_INFO);
 
 	return props;
 }
@@ -297,7 +297,8 @@ static void stroke_filter_defaults(obs_data_t *settings)
 	obs_data_set_default_double(settings, "stroke_size", 4.0);
 	obs_data_set_default_double(settings, "stroke_offset", 0.0);
 	obs_data_set_default_bool(settings, "anti_alias", false);
-	obs_data_set_default_int(settings, "stroke_fill_type", STROKE_FILL_TYPE_COLOR);
+	obs_data_set_default_int(settings, "stroke_fill_type",
+				 STROKE_FILL_TYPE_COLOR);
 	obs_data_set_default_int(settings, "stroke_fill_color", DEFAULT_COLOR);
 	obs_data_set_default_int(settings, "stroke_offset_quality",
 				 OFFSET_QUALITY_NORMAL);
@@ -350,10 +351,8 @@ static void load_effects(stroke_filter_data_t *filter)
 	load_stroke_inner_effect(filter);
 }
 
-
 static bool setting_fill_type_modified(obs_properties_t *props,
-					 obs_property_t *p,
-					 obs_data_t *settings)
+				       obs_property_t *p, obs_data_t *settings)
 {
 	UNUSED_PARAMETER(p);
 	int fill_type = (int)obs_data_get_int(settings, "stroke_fill_type");

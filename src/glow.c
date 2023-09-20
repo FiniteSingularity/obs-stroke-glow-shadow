@@ -25,6 +25,8 @@ void load_glow_effect(glow_filter_data_t *filter)
 				filter->param_glow_fill_color = param;
 			} else if (strcmp(info.name, "intensity") == 0) {
 				filter->param_glow_intensity = param;
+			} else if (strcmp(info.name, "offset") == 0) {
+				filter->param_offset_texel = param;
 			}
 	 	}
 	 }
@@ -46,6 +48,15 @@ void render_glow_filter(glow_filter_data_t *data)
 
 	gs_eparam_t *glow_mask = gs_effect_get_param_by_name(effect, "glow_mask");
 	gs_effect_set_texture(glow_mask, blur_mask_texture);
+
+	struct vec2 scaled_texel;
+	scaled_texel.x = data->offset_texel.x / data->width;
+	scaled_texel.y = data->offset_texel.y / data->height;
+
+	if (data->param_offset_texel) {
+		gs_effect_set_vec2(data->param_offset_texel,
+				   &scaled_texel);
+	}
 
 	if (data->param_glow_intensity) {
 		gs_effect_set_float(data->param_glow_intensity,

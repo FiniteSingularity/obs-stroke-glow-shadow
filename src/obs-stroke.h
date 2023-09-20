@@ -3,8 +3,8 @@
 #include <obs-module.h>
 #include "blur/alpha-blur.h"
 
-#define PLUGIN_INFO                                                                                 \
-	"<a href=\"https://github.com/finitesingularity/obs-stroke/\">Stroke</a> (" PROJECT_VERSION \
+#define PLUGIN_INFO                                                                                                         \
+	"<a href=\"https://github.com/finitesingularity/obs-stroke-glow-shadow/\">Stroke Glow Shadow</a> (" PROJECT_VERSION \
 	") by <a href=\"https://twitch.tv/finitesingularity\">FiniteSingularity</a>"
 
 #define DEFAULT_COLOR 4294967295
@@ -84,11 +84,8 @@ struct stroke_filter_data {
 	gs_eparam_t *param_aa_size;
 	gs_eparam_t *param_aa_image;
 
-
-
 	// Callback Functions
 	void (*video_render)(stroke_filter_data_t *filter);
 	void (*load_effect)(stroke_filter_data_t *filter);
 	void (*update)(stroke_filter_data_t *filter);
 };
-
