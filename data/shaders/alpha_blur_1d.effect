@@ -9,10 +9,11 @@ uniform float radius;
 
 sampler_state textureSampler{
     Filter = Linear;
-    AddressU = Clamp;
-    AddressV = Clamp;
+    AddressU = Border;
+    AddressV = Border;
     MinLOD = 0;
     MaxLOD = 0;
+    BorderColor = 00000000;
 };
 
 struct VertData {
