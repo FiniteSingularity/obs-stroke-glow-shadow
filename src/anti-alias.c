@@ -10,8 +10,8 @@ extern void anti_alias(stroke_filter_data_t *data)
 	}
 
 	gs_texrender_t *tmp = data->stroke_mask;
-	data->stroke_mask = data->alpha_blur_pass_1;
-	data->alpha_blur_pass_1 = tmp;
+	data->stroke_mask = data->alpha_blur_data->alpha_blur_pass_1;
+	data->alpha_blur_data->alpha_blur_pass_1 = tmp;
 
 
 	// 1. First pass- apply 1D blur kernel to horizontal dir.

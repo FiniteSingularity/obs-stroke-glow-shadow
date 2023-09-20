@@ -1,6 +1,7 @@
 #pragma once
 
 #include <obs-module.h>
+#include "blur/alpha-blur.h"
 
 #define PLUGIN_INFO                                                                                 \
 	"<a href=\"https://github.com/finitesingularity/obs-stroke/\">Stroke</a> (" PROJECT_VERSION \
@@ -30,9 +31,9 @@ typedef struct stroke_filter_data stroke_filter_data_t;
 
 struct stroke_filter_data {
 	obs_source_t *context;
+	alpha_blur_data_t *alpha_blur_data;
 
 	// Effects
-	gs_effect_t *effect_alpha_blur;
 	gs_effect_t *effect_stroke;
 	gs_effect_t *effect_stroke_inner;
 	gs_effect_t *effect_anti_alias;
@@ -44,9 +45,6 @@ struct stroke_filter_data {
 	bool output_rendered;
 	gs_texrender_t *output_texrender;
 	// Frame Buffers
-	gs_texrender_t *alpha_blur_pass_1;
-	gs_texrender_t *alpha_blur_output;
-	gs_texrender_t *alpha_blur_output_2;
 	gs_texrender_t *stroke_mask;
 
 	bool rendering;
@@ -69,8 +67,6 @@ struct stroke_filter_data {
 	uint32_t offset_quality;
 	uint32_t stroke_position;
 
-	gs_eparam_t *param_blur_radius;
-	gs_eparam_t *param_blur_texel_step;
 	gs_eparam_t *param_stroke_texel_step;
 	gs_eparam_t *param_stroke_stroke_thickness;
 	gs_eparam_t *param_stroke_offset;

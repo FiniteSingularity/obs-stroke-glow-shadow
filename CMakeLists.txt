@@ -23,6 +23,11 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in ${CMAKE_CURRENT_SOUR
 target_sources(${PROJECT_NAME} PRIVATE
 	src/anti-alias.c
 	src/anti-alias.h
+	src/glow.c
+	src/glow.h
+	src/obs-glow-filter.c
+	src/obs-glow-filter.h
+	src/obs-glow.h
 	src/obs-stroke-filter.c
 	src/obs-stroke-plugin.c
 	src/obs-stroke-filter.h

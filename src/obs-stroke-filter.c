@@ -30,15 +30,9 @@ static void *stroke_filter_create(obs_data_t *settings, obs_source_t *source)
 	blog(LOG_INFO, "======  STROKE FILTER CREATE =======");
 	stroke_filter_data_t *filter = bzalloc(sizeof(stroke_filter_data_t));
 
-	filter->alpha_blur_output =
-		create_or_reset_texrender(filter->alpha_blur_output);
-
-	filter->alpha_blur_output_2 =
-		create_or_reset_texrender(filter->alpha_blur_output_2);
+	filter->alpha_blur_data = bzalloc(sizeof(alpha_blur_data_t));
 
 	filter->context = source;
-	filter->param_blur_radius = NULL;
-	filter->param_blur_texel_step = NULL;
 	filter->param_stroke_texel_step = NULL;
 	filter->param_stroke_stroke_thickness = NULL;
 	filter->param_stroke_offset = NULL;
@@ -56,6 +50,8 @@ static void *stroke_filter_create(obs_data_t *settings, obs_source_t *source)
 
 	filter->reload = true;
 
+	alpha_blur_init(filter->alpha_blur_data);
+
 	obs_source_update(source, settings);
 	return filter;
 }
@@ -66,9 +62,6 @@ static void stroke_filter_destroy(void *data)
 
 	obs_enter_graphics();
 
-	if (filter->effect_alpha_blur) {
-		gs_effect_destroy(filter->effect_alpha_blur);
-	}
 	if (filter->effect_stroke) {
 		gs_effect_destroy(filter->effect_stroke);
 	}
@@ -81,16 +74,6 @@ static void stroke_filter_destroy(void *data)
 	if (filter->effect_fill_stroke) {
 		gs_effect_destroy(filter->effect_fill_stroke);
 	}
-
-	if (filter->alpha_blur_pass_1) {
-		gs_texrender_destroy(filter->alpha_blur_pass_1);
-	}
-	if (filter->alpha_blur_output) {
-		gs_texrender_destroy(filter->alpha_blur_output);
-	}
-	if (filter->alpha_blur_output_2) {
-		gs_texrender_destroy(filter->alpha_blur_output_2);
-	}
 	if (filter->stroke_mask) {
 		gs_texrender_destroy(filter->stroke_mask);
 	}
@@ -101,7 +84,10 @@ static void stroke_filter_destroy(void *data)
 		gs_texrender_destroy(filter->output_texrender);
 	}
 
+	alpha_blur_destroy(filter->alpha_blur_data);
+
 	obs_leave_graphics();
+	bfree(filter->alpha_blur_data);
 	bfree(filter);
 }
 
@@ -180,10 +166,16 @@ static void stroke_filter_video_render(void *data, gs_effect_t *effect)
 	get_input_source(filter);
 
 	// 2. Apply effect to texture, and render texture to video
-	alpha_blur(filter, filter->stroke_size + filter->stroke_offset, filter->alpha_blur_output);
+	alpha_blur(filter->stroke_size + filter->stroke_offset,
+		   filter->alpha_blur_data,
+		   filter->input_texrender,
+		   filter->alpha_blur_data->alpha_blur_output
+	);
 	if (filter->offset_quality == OFFSET_QUALITY_HIGH) {
-		alpha_blur(filter, filter->stroke_offset,
-			   filter->alpha_blur_output_2);
+		alpha_blur(filter->stroke_offset,
+			   filter->alpha_blur_data,
+			   filter->input_texrender,
+			   filter->alpha_blur_data->alpha_blur_output_2);
 	}
 
 	// 3. Create Stroke Mask
@@ -351,7 +343,7 @@ static void draw_output_to_source(stroke_filter_data_t *filter)
 
 static void load_effects(stroke_filter_data_t *filter)
 {
-	load_1d_alpha_blur_effect(filter);
+	load_1d_alpha_blur_effect(filter->alpha_blur_data);
 	load_stroke_effect(filter);
 	load_1d_anti_alias_effect(filter);
 	load_fill_stroke_effect(filter);

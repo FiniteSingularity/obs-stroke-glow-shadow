@@ -28,8 +28,8 @@ VertData mainTransform(VertData v_in)
 
 float4 mainImageFilterColor(VertData v_in) : TARGET
 {
-	float4 col = image.Sample(textureSampler, v_in.uv);
 	float mask_alpha = (stroke_mask.Sample(textureSampler, v_in.uv)).r;
+	float4 col = image.Sample(textureSampler, v_in.uv);
 	return col * col.a + stroke_fill_color * mask_alpha * (1.0-col.a);
 }
 

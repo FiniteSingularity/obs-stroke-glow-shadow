@@ -3,7 +3,7 @@
 #include "version.h"
 
 extern struct obs_source_info obs_stroke_filter;
-//extern struct obs_source_info obs_stroke_source;
+extern struct obs_source_info obs_glow_filter;
 
 OBS_DECLARE_MODULE();
 
@@ -15,7 +15,7 @@ bool obs_module_load(void)
 {
 	blog(LOG_INFO, "[Stroke] loaded version %s", PROJECT_VERSION);
 	obs_register_source(&obs_stroke_filter);
-	//obs_register_source(&obs_stroke_source);
+	obs_register_source(&obs_glow_filter);
 	return true;
 }
 
