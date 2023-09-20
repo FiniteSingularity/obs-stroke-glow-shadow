@@ -236,7 +236,7 @@ static obs_properties_t *stroke_filter_properties(void *data)
 
 	obs_property_t *stroke_fill_method_list = obs_properties_add_list(
 		props, "stroke_fill_type",
-		obs_module_text("StrokeFilter.StrokeFill"), OBS_COMBO_TYPE_LIST,
+		obs_module_text("StrokeFilter.FillType"), OBS_COMBO_TYPE_LIST,
 		OBS_COMBO_FORMAT_INT);
 
 	obs_property_list_add_int(stroke_fill_method_list,

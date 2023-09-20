@@ -20,11 +20,11 @@
 #define GLOW_FILL_TYPE_IMAGE_LABEL "StrokeFilter.ImageFill"
 
 #define GLOW_POSITION_OUTER 1
-#define GLOW_POSITION_OUTER_LABEL "StrokeFilter.GlowPositionOuter"
-#define SHADOW_POSITION_OUTER_LABEL "StrokeFilter.ShadowPositionOuter"
+#define GLOW_POSITION_OUTER_LABEL "GlowFilter.PositionOuter"
+#define SHADOW_POSITION_OUTER_LABEL "ShadowFilter.PositionOuter"
 #define GLOW_POSITION_INNER 2
-#define GLOW_POSITION_INNER_LABEL "StrokeFilter.GlowPositionInner"
-#define SHADOW_POSITION_INNER_LABEL "StrokeFilter.ShadowPositionInner"
+#define GLOW_POSITION_INNER_LABEL "GlowFilter.PositionInner"
+#define SHADOW_POSITION_INNER_LABEL "ShadowFilter.PositionInner"
 
 #define FILTER_TYPE_GLOW 1
 #define FILTER_TYPE_SHADOW 2

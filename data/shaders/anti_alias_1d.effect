@@ -2,7 +2,7 @@ uniform float4x4 ViewProj;
 uniform texture2d image;
 
 uniform float2 texel_step;
-uniform int size = 1;
+uniform int size;
 
 sampler_state textureSampler{
     Filter = Linear;
@@ -35,17 +35,26 @@ float4 mainImage(VertData v_in) : TARGET
 	//col /= ((float)size * 2.0 + 1.0);
 	//return col;
 
-	float step_size = 1.0f / (float) size;
+	//float step_size = 1.0f / (float) size;
+	//float4 col = float4(0.0, 0.0, 0.0, 0.0);
+	//for (float i = -0.5; i < 0.51; i+=step_size)
+	//{
+	//	for (float j = -0.5; j < 0.51; j+=step_size)
+	//	{
+	//		col += image.Sample(textureSampler, v_in.uv + texel_step * float2(i, j));
+	//	}
+	//
+	//}
+	//col /= (float) size * (float) size;
+	//return col;
 	float4 col = float4(0.0, 0.0, 0.0, 0.0);
-	for (float i = -0.5; i < 0.51; i+=step_size)
+	for (int k = 0; k < size * size; k++)
 	{
-		for (float j = -0.5; j < 0.51; j+=step_size)
-		{
-			col += image.Sample(textureSampler, v_in.uv + texel_step * float2(i, j));
-		}
-
+		float4 o = image.Sample(textureSampler, v_in.uv + texel_step * float2(k % size - size / 2, k / size - size / 2) / float(size));
+		col += o;
 	}
-	col /= (float) size * (float) size;
+	col /= float(size * size);
+	col = pow(col, float4(1. / 2.2, 1. / 2.2, 1. / 2.2, 1. / 2.2));
 	return col;
 }
 

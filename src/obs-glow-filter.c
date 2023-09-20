@@ -38,13 +38,13 @@ struct obs_source_info obs_shadow_filter = {
 static const char *glow_filter_name(void *unused)
 {
 	UNUSED_PARAMETER(unused);
-	return obs_module_text("StrokeFilter.GlowFilter");
+	return obs_module_text("GlowFilter");
 }
 
 static const char *shadow_filter_name(void *unused)
 {
 	UNUSED_PARAMETER(unused);
-	return obs_module_text("StrokeFilter.ShadowFilter");
+	return obs_module_text("ShadowFilter");
 }
 
 static void *glow_filter_create(obs_data_t *settings, obs_source_t *source)
@@ -229,7 +229,7 @@ static obs_properties_t *glow_filter_properties(void *data)
 
 	obs_property_t *stroke_position_list = obs_properties_add_list(
 		props, "glow_position",
-		obs_module_text("StrokeFilter.GlowPosition"),
+		obs_module_text("GlowShadowFilter.Position"),
 		OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
 
 	if (filter->filter_type == FILTER_TYPE_GLOW) {
@@ -253,32 +253,32 @@ static obs_properties_t *glow_filter_properties(void *data)
 	}
 
 	obs_property_t *prop = obs_properties_add_float_slider(
-		props, "glow_size", obs_module_text("StrokeFilter.GlowSize"),
+		props, "glow_size", obs_module_text("GlowShadowFilter.Size"),
 		0.0, 100.0, 1.0);
 	obs_property_float_set_suffix(prop, "px");
 
 	prop = obs_properties_add_float_slider(
 		props, "glow_intensity",
-		obs_module_text("StrokeFilter.GlowIntensity"), 0.0, 200.0, 0.1);
+		obs_module_text("GlowShadowFilter.Intensity"), 0.0, 200.0, 0.1);
 	obs_property_float_set_suffix(prop, "%");
 
 	if (filter->filter_type == FILTER_TYPE_SHADOW) {
 		prop = obs_properties_add_float_slider(
 			props, "glow_offset_angle",
-			obs_module_text("StrokeFilter.GlowOffsetAngle"), -180.0,
+			obs_module_text("ShadowFilter.OffsetAngle"), -180.0,
 			180.0, 0.1);
 		obs_property_float_set_suffix(prop, "°");
 
 		prop = obs_properties_add_float_slider(
 			props, "glow_offset_distance",
-			obs_module_text("StrokeFilter.GlowOffsetDistance"), 0,
-			50, 1.0);
+			obs_module_text("ShadowFilter.OffsetDistance"), 0, 50,
+			1.0);
 		obs_property_float_set_suffix(prop, "px");
 	}
 
 	obs_property_t *glow_fill_method_list = obs_properties_add_list(
 		props, "glow_fill_type",
-		obs_module_text("StrokeFilter.StrokeFill"), OBS_COMBO_TYPE_LIST,
+		obs_module_text("StrokeFilter.FillType"), OBS_COMBO_TYPE_LIST,
 		OBS_COMBO_FORMAT_INT);
 
 	obs_property_list_add_int(glow_fill_method_list,
