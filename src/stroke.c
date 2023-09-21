@@ -82,10 +82,10 @@ void render_stroke_filter(stroke_filter_data_t *data)
 				      : data->effect_stroke_inner;
 
 
-	gs_texture_t *blur_mask_texture = gs_texrender_get_texture(data->alpha_blur_output);
+	gs_texture_t *blur_mask_texture = gs_texrender_get_texture(data->alpha_blur_data->alpha_blur_output);
 	gs_texture_t *blur_mask_offset_texture =
 		data->offset_quality == OFFSET_QUALITY_HIGH
-			? gs_texrender_get_texture(data->alpha_blur_output_2)
+			? gs_texrender_get_texture(data->alpha_blur_data->alpha_blur_output_2)
 			: NULL;
 	gs_texture_t *input_texture = gs_texrender_get_texture(data->input_texrender);
 
@@ -93,7 +93,6 @@ void render_stroke_filter(stroke_filter_data_t *data)
 		blog(LOG_INFO, "SOMETHING IS MISSING!!!!!!!!!!!!!!!!!");
 		return;
 	}
-	blog(LOG_INFO, "------------ Render Stroke Filter ------------");
 	// 1. First pass- apply 1D blur kernel to horizontal dir.
 	data->stroke_mask =
 		create_or_reset_texrender(data->stroke_mask);
@@ -108,29 +107,21 @@ void render_stroke_filter(stroke_filter_data_t *data)
 
 	if (data->stroke_position == STROKE_POSITION_OUTER) {
 		if (data->param_stroke_stroke_thickness) {
-			blog(LOG_INFO, "Stroke Thickness set to: %f",
-			     data->stroke_size);
 			gs_effect_set_float(data->param_stroke_stroke_thickness,
 					    data->stroke_size);
 		}
 
 		if (data->param_stroke_offset) {
-			blog(LOG_INFO, "Stroke Offset set to: %f",
-			     data->stroke_offset);
 			gs_effect_set_float(data->param_stroke_offset,
 					    data->stroke_offset);
 		}
 	} else if (data->stroke_position == STROKE_POSITION_INNER) {
 		if (data->param_stroke_inner_stroke_thickness) {
-			blog(LOG_INFO, "Stroke Thickness set to: %f",
-			     data->stroke_size);
 			gs_effect_set_float(data->param_stroke_inner_stroke_thickness,
 					    data->stroke_size);
 		}
 
 		if (data->param_stroke_inner_offset) {
-			blog(LOG_INFO, "Stroke Offset set to: %f",
-			     data->stroke_offset);
 			gs_effect_set_float(data->param_stroke_inner_offset,
 					    data->stroke_offset);
 		}
@@ -149,7 +140,6 @@ void render_stroke_filter(stroke_filter_data_t *data)
 						  OFFSET_QUALITY_NORMAL
 					  ? "OffsetInline"
 					  : "OffsetSubtract";
-	blog(LOG_INFO, "%s", offset_type);
 	set_blending_parameters();
 
 	if (gs_texrender_begin(data->stroke_mask, data->width,
@@ -162,7 +152,6 @@ void render_stroke_filter(stroke_filter_data_t *data)
 		gs_texrender_end(data->stroke_mask);
 	}
 	gs_blend_state_pop();
-	blog(LOG_INFO, "------------ Render Stroke Filter End ------------");
 }
 
 void render_fill_stroke_filter(stroke_filter_data_t *data)

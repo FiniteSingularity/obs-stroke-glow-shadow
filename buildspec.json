@@ -78,6 +78,6 @@
       "qtVersion": 6
     }
   },
-  "name": "obs-stroke",
-  "version": "0.0.1"
+  "name": "obs-stroke-glow-shadow",
+  "version": "0.1.0"
 }

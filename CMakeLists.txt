@@ -9,8 +9,8 @@ else()
   cmake_minimum_required(VERSION 3.18)
 endif()
 
-project(obs-stroke VERSION 0.0.1)
-set(PROJECT_FULL_NAME "Stroke")
+project(obs-stroke-glow-shadow VERSION 0.1.0)
+set(PROJECT_FULL_NAME "Stroke Glow Shadow")
 
 # Set new UUIDs when you start to create a new plugin.
 set(MACOS_PACKAGE_UUID "e3e3b46c-5052-4739-8dfb-22806d02f0e2")
@@ -23,6 +23,11 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in ${CMAKE_CURRENT_SOUR
 target_sources(${PROJECT_NAME} PRIVATE
 	src/anti-alias.c
 	src/anti-alias.h
+	src/glow.c
+	src/glow.h
+	src/obs-glow-filter.c
+	src/obs-glow-filter.h
+	src/obs-glow.h
 	src/obs-stroke-filter.c
 	src/obs-stroke-plugin.c
 	src/obs-stroke-filter.h
