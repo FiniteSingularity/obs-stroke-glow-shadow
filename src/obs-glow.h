@@ -37,6 +37,11 @@ struct glow_filter_data {
 	obs_source_t *context;
 	alpha_blur_data_t *alpha_blur_data;
 
+	obs_weak_source_t *source_input_source;
+
+	bool is_filter;
+	bool is_source;
+
 	// Effects
 	gs_effect_t *effect_glow;
 
@@ -57,6 +62,8 @@ struct glow_filter_data {
 	// Parameters
 	float glow_size;
 	float intensity;
+	bool ignore_source_border;
+	bool fill;
 	struct vec2 offset_texel;
 
 	struct vec4 glow_color;
@@ -71,5 +78,6 @@ struct glow_filter_data {
 	gs_eparam_t *param_glow_fill_source;
 	gs_eparam_t *param_glow_fill_color;
 	gs_eparam_t *param_glow_intensity;
+	gs_eparam_t *param_glow_fill_behind;
 	gs_eparam_t *param_offset_texel;
 };

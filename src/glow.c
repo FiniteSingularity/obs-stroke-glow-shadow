@@ -3,8 +3,10 @@
 
 void load_glow_effect(glow_filter_data_t *filter)
 {
-	 const char *effect_file_path = "/shaders/glow.effect";
-	 filter->effect_glow =
+	const char *effect_file_path = filter->is_filter
+					       ? "/shaders/glow.effect"
+					       : "/shaders/glow_source.effect";
+	filter->effect_glow =
 	 	load_shader_effect(filter->effect_glow, effect_file_path);
 	 if (filter->effect_glow) {
 	 	size_t effect_count =
@@ -27,6 +29,8 @@ void load_glow_effect(glow_filter_data_t *filter)
 				filter->param_glow_intensity = param;
 			} else if (strcmp(info.name, "offset") == 0) {
 				filter->param_offset_texel = param;
+			} else if (strcmp(info.name, "fill_behind") == 0) {
+				filter->param_glow_fill_behind = param;
 			}
 	 	}
 	 }
@@ -61,6 +65,11 @@ void render_glow_filter(glow_filter_data_t *data)
 	if (data->param_glow_intensity) {
 		gs_effect_set_float(data->param_glow_intensity,
 				    data->intensity);
+	}
+
+	if (data->param_glow_fill_behind) {
+		gs_effect_set_float(data->param_glow_fill_behind,
+				    data->fill ? 0.0f : 1.0f);
 	}
 
 	gs_texrender_t *source_render = NULL;

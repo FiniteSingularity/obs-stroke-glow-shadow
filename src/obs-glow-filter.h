@@ -22,7 +22,11 @@ static void glow_filter_video_tick(void *data, float seconds);
 static void glow_filter_defaults(obs_data_t *settings);
 static void shadow_filter_defaults(obs_data_t *settings);
 static void get_input_source(glow_filter_data_t *filter);
-static void draw_output_to_source(glow_filter_data_t *filter);
+static void draw_output(glow_filter_data_t *filter);
 static void load_effects(glow_filter_data_t *filter);
 static bool setting_fill_type_modified(obs_properties_t *props,
 				       obs_property_t *p, obs_data_t *settings);
+static bool setting_glow_position_modified(void *data,
+					   obs_properties_t *props,
+					   obs_property_t *p,
+					   obs_data_t *settings);
