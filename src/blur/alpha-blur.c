@@ -32,7 +32,7 @@ void alpha_blur_destroy(alpha_blur_data_t* data) {
  *  Performs an area blur using the conical kernel.  Blur is
  *  equal in both x and y directions.
  */
-void alpha_blur(float radius, alpha_blur_data_t *data, gs_texrender_t *input, gs_texrender_t *output)
+void alpha_blur(float radius, bool ignore_border, alpha_blur_data_t *data, gs_texrender_t *input, gs_texrender_t *output)
 {
 	gs_effect_t *effect = data->effect_alpha_blur;
 	gs_texture_t *texture = gs_texrender_get_texture(input);
@@ -41,9 +41,10 @@ void alpha_blur(float radius, alpha_blur_data_t *data, gs_texrender_t *input, gs
 		return;
 	}
 
+	const char *technique = ignore_border ? "IgnoreBorder" : "IncludeBorder";
+
 	uint32_t width = gs_texture_get_width(texture);
 	uint32_t height = gs_texture_get_height(texture);
-
 	// 1. First pass- apply 1D blur kernel to horizontal dir.
 	data->alpha_blur_pass_1 =
 		create_or_reset_texrender(data->alpha_blur_pass_1);
@@ -69,7 +70,7 @@ void alpha_blur(float radius, alpha_blur_data_t *data, gs_texrender_t *input, gs
 			       height)) {
 		gs_ortho(0.0f, (float)width, 0.0f, (float)height,
 			 -100.0f, 100.0f);
-		while (gs_effect_loop(effect, "Draw"))
+		while (gs_effect_loop(effect, technique))
 			gs_draw_sprite(texture, 0, width, height);
 		gs_texrender_end(data->alpha_blur_pass_1);
 	}
@@ -92,7 +93,7 @@ void alpha_blur(float radius, alpha_blur_data_t *data, gs_texrender_t *input, gs
 	if (gs_texrender_begin(output, width, height)) {
 		gs_ortho(0.0f, (float)width, 0.0f, (float)height,
 			 -100.0f, 100.0f);
-		while (gs_effect_loop(effect, "Draw"))
+		while (gs_effect_loop(effect, technique))
 			gs_draw_sprite(texture, 0, width, height);
 		gs_texrender_end(output);
 	}

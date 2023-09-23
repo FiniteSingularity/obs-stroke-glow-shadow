@@ -24,7 +24,11 @@ static obs_properties_t *stroke_filter_properties(void *data);
 static void stroke_filter_video_tick(void *data, float seconds);
 static void stroke_filter_defaults(obs_data_t *settings);
 static void get_input_source(stroke_filter_data_t *filter);
-static void draw_output_to_source(stroke_filter_data_t *filter);
+static void draw_output(stroke_filter_data_t *filter);
 static void load_effects(stroke_filter_data_t *filter);
 static bool setting_fill_type_modified(obs_properties_t *props,
 				       obs_property_t *p, obs_data_t *settings);
+static bool setting_stroke_position_modified(void *data,
+					     obs_properties_t *props,
+					     obs_property_t *p,
+					     obs_data_t *settings);

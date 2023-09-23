@@ -33,6 +33,11 @@ struct stroke_filter_data {
 	obs_source_t *context;
 	alpha_blur_data_t *alpha_blur_data;
 
+	obs_weak_source_t *source_input_source;
+
+	bool is_filter;
+	bool is_source;
+
 	// Effects
 	gs_effect_t *effect_stroke;
 	gs_effect_t *effect_stroke_inner;
@@ -59,6 +64,8 @@ struct stroke_filter_data {
 	float stroke_offset;
 	float stroke_distance;
 	bool anti_alias;
+	bool ignore_source_border;
+	bool fill;
 
 	struct vec4 stroke_color;
 	uint32_t fill_type;
@@ -79,6 +86,7 @@ struct stroke_filter_data {
 	gs_eparam_t *param_fill_stroke_stroke_mask;
 	gs_eparam_t *param_fill_stroke_fill_source;
 	gs_eparam_t *param_fill_stroke_fill_color;
+	gs_eparam_t *param_fill_stroke_fill_behind;
 
 	gs_eparam_t *param_aa_texel_step;
 	gs_eparam_t *param_aa_size;

@@ -4,6 +4,22 @@
 #include "anti-alias.h"
 #include "stroke.h"
 
+struct obs_source_info obs_stroke_source = {
+	.id = "obs_stroke_source",
+	.type = OBS_SOURCE_TYPE_INPUT,
+	.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_CUSTOM_DRAW,
+	.get_name = stroke_filter_name,
+	.create = stroke_filter_create,
+	.destroy = stroke_filter_destroy,
+	.update = stroke_filter_update,
+	.video_render = stroke_filter_video_render,
+	.video_tick = stroke_filter_video_tick,
+	.get_width = stroke_filter_width,
+	.get_height = stroke_filter_height,
+	.get_properties = stroke_filter_properties,
+	.get_defaults = stroke_filter_defaults,
+	.icon_type = OBS_ICON_TYPE_COLOR};
+
 struct obs_source_info obs_stroke_filter = {
 	.id = "obs_stroke_filter",
 	.type = OBS_SOURCE_TYPE_FILTER,
@@ -33,6 +49,12 @@ static void *stroke_filter_create(obs_data_t *settings, obs_source_t *source)
 	filter->alpha_blur_data = bzalloc(sizeof(alpha_blur_data_t));
 
 	filter->context = source;
+	filter->is_source = obs_source_get_type(filter->context) ==
+			    OBS_SOURCE_TYPE_INPUT;
+
+	filter->is_filter = obs_source_get_type(filter->context) ==
+			    OBS_SOURCE_TYPE_FILTER;
+
 	filter->param_stroke_texel_step = NULL;
 	filter->param_stroke_stroke_thickness = NULL;
 	filter->param_stroke_offset = NULL;
@@ -43,6 +65,7 @@ static void *stroke_filter_create(obs_data_t *settings, obs_source_t *source)
 	filter->param_fill_stroke_stroke_mask = NULL;
 	filter->param_fill_stroke_fill_source = NULL;
 	filter->param_fill_stroke_fill_color = NULL;
+	filter->param_fill_stroke_fill_behind = NULL;
 
 	filter->param_aa_texel_step = NULL;
 	filter->param_aa_size = NULL;
@@ -124,7 +147,9 @@ static void stroke_filter_update(void *data, obs_data_t *settings)
 	filter->stroke_position =
 		(uint32_t)obs_data_get_int(settings, "stroke_position");
 	filter->anti_alias = obs_data_get_bool(settings, "anti_alias");
-
+	filter->ignore_source_border =
+		obs_data_get_bool(settings, "ignore_source_border");
+	filter->fill = obs_data_get_bool(settings, "fill");
 	const char *fill_source_name =
 		obs_data_get_string(settings, "stroke_fill_source");
 	obs_source_t *fill_source =
@@ -140,6 +165,33 @@ static void stroke_filter_update(void *data, obs_data_t *settings)
 		filter->fill_source_source = NULL;
 	}
 
+	if (filter->is_source) {
+		const char *stroke_source_name =
+			obs_data_get_string(settings, "stroke_source");
+		obs_source_t *stroke_source =
+			(stroke_source_name && strlen(stroke_source_name))
+				? obs_get_source_by_name(stroke_source_name)
+				: NULL;
+		if (stroke_source) {
+			obs_weak_source_release(filter->source_input_source);
+			filter->source_input_source =
+				obs_source_get_weak_source(stroke_source);
+			filter->width =
+				(uint32_t)obs_source_get_width(stroke_source);
+			filter->height =
+				(uint32_t)obs_source_get_height(stroke_source);
+			obs_source_release(stroke_source);
+		} else {
+			filter->source_input_source = NULL;
+			filter->width = (uint32_t)0;
+			filter->height = (uint32_t)0;
+		}
+	} else {
+		filter->width = (uint32_t)obs_source_get_width(filter->context);
+		filter->height =
+			(uint32_t)obs_source_get_height(filter->context);
+	}
+
 	if (filter->reload) {
 		filter->reload = false;
 		load_effects(filter);
@@ -152,7 +204,7 @@ static void stroke_filter_video_render(void *data, gs_effect_t *effect)
 	stroke_filter_data_t *filter = data;
 
 	if (filter->rendered) {
-		draw_output_to_source(filter);
+		draw_output(filter);
 		return;
 	}
 
@@ -169,11 +221,12 @@ static void stroke_filter_video_render(void *data, gs_effect_t *effect)
 
 	// 2. Apply effect to texture, and render texture to video
 	alpha_blur(filter->stroke_size + filter->stroke_offset,
-		   filter->alpha_blur_data, filter->input_texrender,
+		   filter->ignore_source_border, filter->alpha_blur_data,
+		   filter->input_texrender,
 		   filter->alpha_blur_data->alpha_blur_output);
 	if (filter->offset_quality == OFFSET_QUALITY_HIGH) {
-		alpha_blur(filter->stroke_offset, filter->alpha_blur_data,
-			   filter->input_texrender,
+		alpha_blur(filter->stroke_offset, filter->ignore_source_border,
+			   filter->alpha_blur_data, filter->input_texrender,
 			   filter->alpha_blur_data->alpha_blur_output_2);
 	}
 
@@ -183,11 +236,10 @@ static void stroke_filter_video_render(void *data, gs_effect_t *effect)
 	if (filter->anti_alias) {
 		anti_alias(filter);
 	}
-
 	render_fill_stroke_filter(filter);
 
 	// 3. Draw result (filter->output_texrender) to source
-	draw_output_to_source(filter);
+	draw_output(filter);
 	filter->rendered = true;
 	filter->rendering = false;
 }
@@ -198,6 +250,18 @@ static obs_properties_t *stroke_filter_properties(void *data)
 
 	obs_properties_t *props = obs_properties_create();
 	obs_properties_set_param(props, filter, NULL);
+
+	if (filter->is_source) {
+		obs_property_t *stroke_source = obs_properties_add_list(
+			props, "stroke_source",
+			obs_module_text("StrokeSource.Source"),
+			OBS_COMBO_TYPE_EDITABLE, OBS_COMBO_FORMAT_STRING);
+		obs_property_list_add_string(
+			stroke_source, obs_module_text("StrokeCommon.None"),
+			"");
+		obs_enum_sources(add_source_to_list, stroke_source);
+		obs_enum_scenes(add_source_to_list, stroke_source);
+	}
 
 	obs_property_t *stroke_position_list = obs_properties_add_list(
 		props, "stroke_position",
@@ -210,6 +274,16 @@ static obs_properties_t *stroke_filter_properties(void *data)
 	obs_property_list_add_int(stroke_position_list,
 				  obs_module_text(STROKE_POSITION_INNER_LABEL),
 				  STROKE_POSITION_INNER);
+
+	obs_property_set_modified_callback2(stroke_position_list,
+					   setting_stroke_position_modified, data);
+
+	obs_properties_add_bool(
+		props, "ignore_source_border",
+		obs_module_text("StrokeCommon.IgnoreSourceBorder"));
+
+	obs_properties_add_bool(props, "fill",
+				obs_module_text("StrokeFilter.FillSource"));
 
 	obs_properties_add_float_slider(
 		props, "stroke_size",
@@ -281,14 +355,14 @@ static void stroke_filter_video_tick(void *data, float seconds)
 {
 	UNUSED_PARAMETER(seconds);
 	stroke_filter_data_t *filter = data;
-	obs_source_t *target = obs_filter_get_target(filter->context);
-	if (!target) {
-		return;
+	if (filter->is_filter) {
+		obs_source_t *target = obs_filter_get_target(filter->context);
+		if (!target) {
+			return;
+		}
+		filter->width = (uint32_t)obs_source_get_base_width(target);
+		filter->height = (uint32_t)obs_source_get_base_height(target);
 	}
-	filter->width = (uint32_t)obs_source_get_base_width(target);
-	filter->height = (uint32_t)obs_source_get_base_height(target);
-	//filter->uv_size.x = (float)filter->width;
-	//filter->uv_size.y = (float)filter->height;
 	filter->rendered = false;
 }
 
@@ -304,41 +378,70 @@ static void stroke_filter_defaults(obs_data_t *settings)
 				 OFFSET_QUALITY_NORMAL);
 	obs_data_set_default_int(settings, "stroke_position",
 				 STROKE_POSITION_OUTER);
+	obs_data_set_default_bool(settings, "ignore_source_border", true);
+	obs_data_set_default_bool(settings, "fill", true);
 }
 
 static void get_input_source(stroke_filter_data_t *filter)
 {
-	gs_effect_t *pass_through = obs_get_base_effect(OBS_EFFECT_DEFAULT);
+	obs_source_t *input_source = filter->context;
+	if (filter->is_source) {
+		input_source = filter->source_input_source
+				       ? obs_weak_source_get_source(
+						 filter->source_input_source)
+				       : NULL;
+		if (!input_source) {
+			return;
+		}
+	}
 
+	const enum gs_color_space preferred_spaces[] = {
+		GS_CS_SRGB,
+		GS_CS_SRGB_16F,
+		GS_CS_709_EXTENDED,
+	};
+	const enum gs_color_space space = obs_source_get_color_space(
+		input_source, OBS_COUNTOF(preferred_spaces), preferred_spaces);
+
+	// Set up a tex renderer for source
 	filter->input_texrender =
 		create_or_reset_texrender(filter->input_texrender);
-	if (obs_source_process_filter_begin(filter->context, GS_RGBA,
-					    OBS_ALLOW_DIRECT_RENDERING) &&
-	    gs_texrender_begin(filter->input_texrender, filter->width,
-			       filter->height)) {
+	uint32_t base_width = obs_source_get_width(input_source);
+	uint32_t base_height = obs_source_get_height(input_source);
+	filter->width = base_width;
+	filter->height = base_height;
+	gs_blend_state_push();
+	gs_blend_function(GS_BLEND_ONE, GS_BLEND_ZERO);
+	if (gs_texrender_begin_with_color_space(
+		    filter->input_texrender, base_width, base_height, space)) {
+		const float w = (float)base_width;
+		const float h = (float)base_height;
+		struct vec4 clear_color;
 
-		set_blending_parameters();
+		vec4_zero(&clear_color);
+		gs_clear(GS_CLEAR_COLOR, &clear_color, 0.0f, 0);
+		gs_ortho(0.0f, w, 0.0f, h, -100.0f, 100.0f);
 
-		gs_ortho(0.0f, (float)filter->width, 0.0f,
-			 (float)filter->height, -100.0f, 100.0f);
-
-		obs_source_process_filter_end(filter->context, pass_through,
-					      filter->width, filter->height);
+		obs_source_video_render(input_source);
 		gs_texrender_end(filter->input_texrender);
-		gs_blend_state_pop();
+	}
+	gs_blend_state_pop();
+	if (filter->is_source) {
+		obs_source_release(input_source);
 	}
 }
 
-static void draw_output_to_source(stroke_filter_data_t *filter)
+static void draw_output(stroke_filter_data_t *filter)
 {
 	gs_texture_t *texture =
 		gs_texrender_get_texture(filter->output_texrender);
 	gs_effect_t *pass_through = obs_get_base_effect(OBS_EFFECT_DEFAULT);
 	gs_eparam_t *param = gs_effect_get_param_by_name(pass_through, "image");
 	gs_effect_set_texture(param, texture);
-
+	uint32_t width = gs_texture_get_width(texture);
+	uint32_t height = gs_texture_get_height(texture);
 	while (gs_effect_loop(pass_through, "Draw")) {
-		gs_draw_sprite(texture, 0, filter->width, filter->height);
+		gs_draw_sprite(texture, 0, width, height);
 	}
 }
 
@@ -371,6 +474,30 @@ static bool setting_fill_type_modified(obs_properties_t *props,
 		setting_visibility("stroke_fill_color", false, props);
 		setting_visibility("stroke_fill_source", false, props);
 		setting_visibility("stroke_fill_image", true, props);
+		break;
+	}
+	return true;
+}
+
+static bool setting_stroke_position_modified(void *data,
+					     obs_properties_t *props,
+					     obs_property_t *p,
+					     obs_data_t *settings)
+{
+	UNUSED_PARAMETER(p);
+	stroke_filter_data_t *filter = data;
+
+	int position = (int)obs_data_get_int(settings, "stroke_position");
+	switch (position) {
+	case STROKE_POSITION_INNER:
+		setting_visibility("ignore_source_border", true, props);
+		setting_visibility("fill", false, props);
+		break;
+	case STROKE_POSITION_OUTER:
+		setting_visibility("ignore_source_border", false, props);
+		setting_visibility("fill", filter->is_source, props);
+		break;
+	default:
 		break;
 	}
 	return true;

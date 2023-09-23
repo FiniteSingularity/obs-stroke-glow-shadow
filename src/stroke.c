@@ -49,7 +49,8 @@ void load_stroke_inner_effect(stroke_filter_data_t *filter)
 
 void load_fill_stroke_effect(stroke_filter_data_t *filter)
 {
-	const char *effect_file_path = "/shaders/fill_stroke.effect";
+	const char *effect_file_path =
+		filter->is_filter ? "/shaders/fill_stroke.effect" : "/shaders/fill_stroke_source.effect";
 	filter->effect_fill_stroke =
 		load_shader_effect(filter->effect_fill_stroke, effect_file_path);
 	if (filter->effect_fill_stroke) {
@@ -69,6 +70,8 @@ void load_fill_stroke_effect(stroke_filter_data_t *filter)
 				filter->param_fill_stroke_fill_source = param;
 			} else if(strcmp(info.name, "stroke_fill_color") == 0) {
 				filter->param_fill_stroke_fill_color = param;
+			} else if (strcmp(info.name, "fill_behind") == 0) {
+				filter->param_fill_stroke_fill_behind = param;
 			}
 		}
 	}
@@ -90,7 +93,7 @@ void render_stroke_filter(stroke_filter_data_t *data)
 	gs_texture_t *input_texture = gs_texrender_get_texture(data->input_texrender);
 
 	if (!effect || !input_texture || !blur_mask_texture) {
-		blog(LOG_INFO, "SOMETHING IS MISSING!!!!!!!!!!!!!!!!!");
+		blog(LOG_INFO, "Something is missing in render_stroke_filter!!!");
 		return;
 	}
 	// 1. First pass- apply 1D blur kernel to horizontal dir.
@@ -163,7 +166,6 @@ void render_fill_stroke_filter(stroke_filter_data_t *data)
 		gs_texrender_get_texture(data->input_texrender);
 
 	if (!effect || !image_texture || !stroke_mask_texture) {
-		blog(LOG_INFO, "SOMETHING IS MISSING!!!!!!!!!!!!!!!!!");
 		return;
 	}
 
@@ -177,6 +179,11 @@ void render_fill_stroke_filter(stroke_filter_data_t *data)
 	if (data->param_fill_stroke_stroke_mask) {
 		gs_effect_set_texture(data->param_fill_stroke_stroke_mask,
 				      stroke_mask_texture);
+	}
+
+	if (data->param_fill_stroke_fill_behind) {
+		gs_effect_set_float(data->param_fill_stroke_fill_behind,
+				    data->fill ? 0.0f : 1.0f);
 	}
 
 	gs_texrender_t *source_render = NULL;

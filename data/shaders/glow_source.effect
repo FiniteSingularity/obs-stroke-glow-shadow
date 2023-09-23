@@ -1,0 +1,99 @@
+uniform float4x4 ViewProj;
+uniform texture2d image;
+uniform texture2d glow_fill_source;
+uniform float4 glow_fill_color;
+uniform texture2d glow_mask;
+uniform float intensity;
+uniform float2 offset;
+uniform float fill_behind = 0.0;
+
+
+sampler_state textureSampler{
+    Filter = Linear;
+    AddressU = Clamp;
+    AddressV = Clamp;
+    MinLOD = 0;
+    MaxLOD = 0;
+};
+
+struct VertData
+{
+	float4 pos : POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+VertData mainTransform(VertData v_in)
+{
+	v_in.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	return v_in;
+}
+
+float4 mainImageOuterGlowColor(VertData v_in) : TARGET
+{
+	float4 mask_col = glow_mask.Sample(textureSampler, v_in.uv - offset);
+	float4 color = image.Sample(textureSampler, v_in.uv);
+	float alpha = clamp(glow_fill_color.a * intensity * 2.0 * mask_col.a, 0.0, 1.0);
+	return float4(glow_fill_color.rgb, alpha) * (1.0 - fill_behind * color.a);
+}
+
+float4 mainImageOuterGlowSource(VertData v_in) : TARGET
+{
+	float4 mask_col = glow_mask.Sample(textureSampler, v_in.uv - offset);
+	float4 color = image.Sample(textureSampler, v_in.uv);
+	float4 fill_col = glow_fill_source.Sample(textureSampler, v_in.uv);
+	float alpha = clamp(fill_col.a * intensity * 2.0 * mask_col.a, 0.0f, 1.0f);
+	return float4(fill_col.rgb, alpha) * (1.0 - fill_behind * color.a);
+}
+
+float4 mainImageInnerGlowColor(VertData v_in) : TARGET
+{
+	float4 mask_col = glow_mask.Sample(textureSampler, v_in.uv - offset);
+	float4 col = image.Sample(textureSampler, v_in.uv);
+	float mask_alpha = clamp(intensity * 2.0 * (1.0 - mask_col.a), 0.0f, 1.0f) * col.a;
+	return float4(glow_fill_color.rgb, glow_fill_color.a * mask_alpha);
+}
+
+float4 mainImageInnerGlowSource(VertData v_in) : TARGET
+{
+	float4 mask_col = glow_mask.Sample(textureSampler, v_in.uv - offset);
+	float4 col = image.Sample(textureSampler, v_in.uv);
+	float4 fill_col = glow_fill_source.Sample(textureSampler, v_in.uv);
+	float mask_alpha = clamp(intensity * 2.0 * (1.0 - mask_col.a) * col.a, 0.0, 1.0);
+	return float4(fill_col.rgb, fill_col.a * mask_alpha);
+}
+
+technique FilterOuterGlowColor
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = mainImageOuterGlowColor(v_in);
+	}
+}
+
+technique FilterOuterGlowSource
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = mainImageOuterGlowSource(v_in);
+	}
+}
+
+technique FilterInnerGlowColor
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = mainImageInnerGlowColor(v_in);
+	}
+}
+
+technique FilterInnerGlowSource
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = mainImageInnerGlowSource(v_in);
+	}
+}
