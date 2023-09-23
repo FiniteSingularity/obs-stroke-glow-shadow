@@ -402,7 +402,6 @@ static void get_input_source(stroke_filter_data_t *filter)
 	};
 	const enum gs_color_space space = obs_source_get_color_space(
 		input_source, OBS_COUNTOF(preferred_spaces), preferred_spaces);
-	const enum gs_color_format format = gs_get_format_from_space(space);
 
 	// Set up a tex renderer for source
 	filter->input_texrender =

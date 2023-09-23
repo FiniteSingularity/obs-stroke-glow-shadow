@@ -166,7 +166,6 @@ void render_fill_stroke_filter(stroke_filter_data_t *data)
 		gs_texrender_get_texture(data->input_texrender);
 
 	if (!effect || !image_texture || !stroke_mask_texture) {
-		blog(LOG_INFO, "Something is missing in render_fill_stroke_filter!!! %i %i %i", effect, image_texture, stroke_mask_texture);
 		return;
 	}
 
