@@ -100,7 +100,7 @@ static glow_filter_data_t *filter_create(obs_source_t *source)
 	glow_filter_data_t *filter = bzalloc(sizeof(glow_filter_data_t));
 
 	filter->context = source;
-
+	filter->input_texture_generated = false;
 	filter->alpha_blur_data = bzalloc(sizeof(alpha_blur_data_t));
 
 	filter->is_source = obs_source_get_type(filter->context) ==
@@ -253,17 +253,26 @@ static void glow_filter_video_render(void *data, gs_effect_t *effect)
 		return;
 	}
 
-	if (filter->rendering) {
+	if (filter->rendering && filter->is_filter) {
 		obs_source_skip_video_filter(filter->context);
 		return;
+	} else if(filter->rendering) {
+		return;
 	}
-	//blog(LOG_INFO, "======= START RENDER PASS ===========");
 
 	filter->rendering = true;
 
 	// 1. Get the input source as a texture renderer
 	//    accessed as filter->input_texrender after call
 	get_input_source(filter);
+
+	if (!filter->input_texture_generated) {
+		if (filter->is_filter) {
+			obs_source_skip_video_filter(filter->context);
+		}
+		filter->rendering = false;
+		return;
+	}
 
 	// 2. Apply effect to texture, and render texture to video
 	alpha_blur(filter->glow_size, filter->ignore_source_border,
@@ -329,8 +338,8 @@ static obs_properties_t *glow_filter_properties(void *data)
 			GLOW_POSITION_INNER);
 	}
 
-	obs_property_set_modified_callback2(glow_position_list,
-					   setting_glow_position_modified, data);
+	obs_property_set_modified_callback2(
+		glow_position_list, setting_glow_position_modified, data);
 
 	obs_properties_add_bool(
 		props, "ignore_source_border",
@@ -458,6 +467,7 @@ static void get_input_source(glow_filter_data_t *filter)
 						 filter->source_input_source)
 				       : NULL;
 		if (!input_source) {
+			filter->input_texture_generated = false;
 			return;
 		}
 	}
@@ -491,6 +501,9 @@ static void get_input_source(glow_filter_data_t *filter)
 
 		obs_source_video_render(input_source);
 		gs_texrender_end(filter->input_texrender);
+		filter->input_texture_generated = w > 0 && h > 0;
+	} else {
+		filter->input_texture_generated = false;
 	}
 	gs_blend_state_pop();
 	if (filter->is_source) {
@@ -543,8 +556,7 @@ static bool setting_fill_type_modified(obs_properties_t *props,
 	return true;
 }
 
-static bool setting_glow_position_modified(void *data,
-					   obs_properties_t *props,
+static bool setting_glow_position_modified(void *data, obs_properties_t *props,
 					   obs_property_t *p,
 					   obs_data_t *settings)
 {

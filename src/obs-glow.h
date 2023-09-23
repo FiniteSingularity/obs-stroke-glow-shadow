@@ -52,6 +52,7 @@ struct glow_filter_data {
 	gs_texrender_t *output_texrender;
 	// Frame Buffers
 
+	bool input_texture_generated;
 	bool rendering;
 	bool reload;
 	bool rendered;

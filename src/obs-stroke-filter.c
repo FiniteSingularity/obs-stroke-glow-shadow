@@ -43,12 +43,12 @@ static const char *stroke_filter_name(void *unused)
 
 static void *stroke_filter_create(obs_data_t *settings, obs_source_t *source)
 {
-	blog(LOG_INFO, "======  STROKE FILTER CREATE =======");
 	stroke_filter_data_t *filter = bzalloc(sizeof(stroke_filter_data_t));
 
 	filter->alpha_blur_data = bzalloc(sizeof(alpha_blur_data_t));
 
 	filter->context = source;
+	filter->input_texture_generated = false;
 	filter->is_source = obs_source_get_type(filter->context) ==
 			    OBS_SOURCE_TYPE_INPUT;
 
@@ -208,8 +208,10 @@ static void stroke_filter_video_render(void *data, gs_effect_t *effect)
 		return;
 	}
 
-	if (filter->rendering) {
+	if (filter->rendering && filter->is_filter) {
 		obs_source_skip_video_filter(filter->context);
+		return;
+	} else if (filter->rendering) {
 		return;
 	}
 
@@ -218,7 +220,13 @@ static void stroke_filter_video_render(void *data, gs_effect_t *effect)
 	// 1. Get the input source as a texture renderer
 	//    accessed as filter->input_texrender after call
 	get_input_source(filter);
-
+	if (!filter->input_texture_generated) {
+		filter->rendering = false;
+		if (filter->is_filter) {
+			obs_source_skip_video_filter(filter->context);
+		}
+		return;
+	}
 	// 2. Apply effect to texture, and render texture to video
 	alpha_blur(filter->stroke_size + filter->stroke_offset,
 		   filter->ignore_source_border, filter->alpha_blur_data,
@@ -275,8 +283,8 @@ static obs_properties_t *stroke_filter_properties(void *data)
 				  obs_module_text(STROKE_POSITION_INNER_LABEL),
 				  STROKE_POSITION_INNER);
 
-	obs_property_set_modified_callback2(stroke_position_list,
-					   setting_stroke_position_modified, data);
+	obs_property_set_modified_callback2(
+		stroke_position_list, setting_stroke_position_modified, data);
 
 	obs_properties_add_bool(
 		props, "ignore_source_border",
@@ -391,6 +399,7 @@ static void get_input_source(stroke_filter_data_t *filter)
 						 filter->source_input_source)
 				       : NULL;
 		if (!input_source) {
+			filter->input_texture_generated = false;
 			return;
 		}
 	}
@@ -424,6 +433,9 @@ static void get_input_source(stroke_filter_data_t *filter)
 
 		obs_source_video_render(input_source);
 		gs_texrender_end(filter->input_texrender);
+		filter->input_texture_generated = w > 0 && h > 0;
+	} else {
+		filter->input_texture_generated = false;
 	}
 	gs_blend_state_pop();
 	if (filter->is_source) {
