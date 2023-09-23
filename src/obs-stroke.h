@@ -52,6 +52,7 @@ struct stroke_filter_data {
 	// Frame Buffers
 	gs_texrender_t *stroke_mask;
 
+	bool input_texture_generated;
 	bool rendering;
 	bool reload;
 	bool rendered;
