@@ -1,4 +1,4 @@
-<h1 align="center">Stroke, Glow, Shadow Plugin LOGO</h1>
+<h1 align="center">Stroke, Glow, Shadow Plugin</h1>
 
 <p align="center">
     <i align="center">An OBS plugin to create strokes, glow, and shadows around masked sources.</i>
