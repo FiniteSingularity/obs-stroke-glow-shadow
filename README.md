@@ -27,7 +27,7 @@
 
 The Stroke, Glow, Shadow Plugin offers an efficient way to apply Stroke, Glow, and Shadow effects to masked sources in OBS.
 
-- 🚀 Stroke, Glow, Shadow, as the name implies, provides effects for applying [Stroke](#stroke), [Glow](#glow), and [Drop Shadow](#shadow)to any masked sources in OBS. You can use these effects on everything from a chroma-keyed facecam to a native OBS text source.
+- 🚀 Stroke, Glow, Shadow, as the name implies, provides effects for applying [Stroke](#stroke), [Glow](#glow), and [Drop Shadow](#shadow) to any masked sources in OBS. You can use these effects on everything from a chroma-keyed facecam to a native OBS text source.
 - ↔️ All three effects allow for inner and outer applications.
 - 🎨 Additionally, all three effects offer options for solid color or another OBS source to be used for the [fill type](#fill-types).
 - 🎛️ Lastly, all three effects are available as both [inline filters and as separate sources](#source-vs-filter).
