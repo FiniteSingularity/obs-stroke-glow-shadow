@@ -162,6 +162,9 @@ static void stroke_filter_update(void *data, obs_data_t *settings)
 			obs_source_get_weak_source(fill_source);
 		obs_source_release(fill_source);
 	} else {
+		if (filter->fill_source_source) {
+			obs_weak_source_release(filter->fill_source_source);
+		}
 		filter->fill_source_source = NULL;
 	}
 
@@ -203,6 +206,10 @@ static void stroke_filter_video_render(void *data, gs_effect_t *effect)
 	UNUSED_PARAMETER(effect);
 	stroke_filter_data_t *filter = data;
 
+	bool source_not_available = (filter->fill_type ==
+					    STROKE_FILL_TYPE_SOURCE) &&
+				    !(filter->fill_source_source);
+
 	if (filter->rendered) {
 		draw_output(filter);
 		return;
@@ -225,6 +232,14 @@ static void stroke_filter_video_render(void *data, gs_effect_t *effect)
 		if (filter->is_filter) {
 			obs_source_skip_video_filter(filter->context);
 		}
+		return;
+	}
+	if (source_not_available) {
+		filter->rendering = false;
+		gs_texrender_t *tmp = filter->output_texrender;
+		filter->output_texrender = filter->input_texrender;
+		filter->input_texrender = tmp;
+		draw_output(filter);
 		return;
 	}
 	// 2. Apply effect to texture, and render texture to video
@@ -349,7 +364,7 @@ static obs_properties_t *stroke_filter_properties(void *data)
 		props, "stroke_fill_source",
 		obs_module_text("StrokeFilter.SourceFill"),
 		OBS_COMBO_TYPE_EDITABLE, OBS_COMBO_FORMAT_STRING);
-	obs_property_list_add_string(stroke_fill_source_source, "None", "");
+	obs_property_list_add_string(stroke_fill_source_source, "None", "Testing");
 	obs_enum_sources(add_source_to_list, stroke_fill_source_source);
 	obs_enum_scenes(add_source_to_list, stroke_fill_source_source);
 
@@ -381,6 +396,7 @@ static void stroke_filter_defaults(obs_data_t *settings)
 	obs_data_set_default_bool(settings, "anti_alias", false);
 	obs_data_set_default_int(settings, "stroke_fill_type",
 				 STROKE_FILL_TYPE_COLOR);
+	obs_data_set_default_string(settings, "stroke_fill_source", "");
 	obs_data_set_default_int(settings, "stroke_fill_color", DEFAULT_COLOR);
 	obs_data_set_default_int(settings, "stroke_offset_quality",
 				 OFFSET_QUALITY_NORMAL);

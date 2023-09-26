@@ -253,6 +253,10 @@ static void glow_filter_video_render(void *data, gs_effect_t *effect)
 		return;
 	}
 
+	bool source_not_available =
+		(filter->fill_type == GLOW_FILL_TYPE_SOURCE) &&
+		!(filter->fill_source_source);
+
 	if (filter->rendering && filter->is_filter) {
 		obs_source_skip_video_filter(filter->context);
 		return;
@@ -271,6 +275,14 @@ static void glow_filter_video_render(void *data, gs_effect_t *effect)
 			obs_source_skip_video_filter(filter->context);
 		}
 		filter->rendering = false;
+		return;
+	}
+	if (source_not_available) {
+		filter->rendering = false;
+		gs_texrender_t *tmp = filter->output_texrender;
+		filter->output_texrender = filter->input_texrender;
+		filter->input_texrender = tmp;
+		draw_output(filter);
 		return;
 	}
 
