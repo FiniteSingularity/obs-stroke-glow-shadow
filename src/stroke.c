@@ -188,9 +188,8 @@ void render_fill_stroke_filter(stroke_filter_data_t *data)
 				    data->fill ? 0.0f : 1.0f);
 	}
 
-	bool source_available = (data->fill_type ==
-					    		 STROKE_FILL_TYPE_SOURCE) &&
-				    			 data->fill_source_source;
+	bool source_available = (data->fill_type == STROKE_FILL_TYPE_SOURCE) &&
+				data->fill_source_source;
 
 	gs_texrender_t *source_render = NULL;
 	if (data->fill_type == STROKE_FILL_TYPE_SOURCE && source_available) {
@@ -255,7 +254,9 @@ void render_fill_stroke_filter(stroke_filter_data_t *data)
 		}
 	}
 
-	bool fill_color = (data->fill_type == STROKE_FILL_TYPE_COLOR) || (data->fill_type == STROKE_FILL_TYPE_SOURCE && !source_available);
+	bool fill_color = (data->fill_type == STROKE_FILL_TYPE_COLOR) ||
+			  (data->fill_type == STROKE_FILL_TYPE_SOURCE &&
+			   !source_available);
 	const char *fill_type =
 		data->fill_type ==  fill_color ? "FilterColor"
 		: data->fill_type == STROKE_FILL_TYPE_SOURCE ? "FilterSource"

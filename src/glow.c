@@ -72,9 +72,8 @@ void render_glow_filter(glow_filter_data_t *data)
 				    data->fill ? 0.0f : 1.0f);
 	}
 
-	bool source_available = (data->fill_type ==
-					    		 GLOW_FILL_TYPE_SOURCE) &&
-				    			 data->fill_source_source;
+	bool source_available = (data->fill_type == GLOW_FILL_TYPE_SOURCE) &&
+				data->fill_source_source;
 
 	gs_texrender_t *source_render = NULL;
 	if (source_available) {
@@ -139,7 +138,9 @@ void render_glow_filter(glow_filter_data_t *data)
 	data->output_texrender =
 		create_or_reset_texrender(data->output_texrender);
 
-	bool fill_color = (data->fill_type == GLOW_FILL_TYPE_COLOR) || (data->fill_type == GLOW_FILL_TYPE_SOURCE && !source_available);
+	bool fill_color =
+		(data->fill_type == GLOW_FILL_TYPE_COLOR) ||
+		(data->fill_type == GLOW_FILL_TYPE_SOURCE && !source_available);
 	const char *fill_type =
 		fill_color ? "Color"
 		: data->fill_type == GLOW_FILL_TYPE_SOURCE ? "Source"
