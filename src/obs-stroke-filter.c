@@ -206,10 +206,6 @@ static void stroke_filter_video_render(void *data, gs_effect_t *effect)
 	UNUSED_PARAMETER(effect);
 	stroke_filter_data_t *filter = data;
 
-	bool source_not_available = (filter->fill_type ==
-					    STROKE_FILL_TYPE_SOURCE) &&
-				    !(filter->fill_source_source);
-
 	if (filter->rendered) {
 		draw_output(filter);
 		return;
@@ -234,14 +230,7 @@ static void stroke_filter_video_render(void *data, gs_effect_t *effect)
 		}
 		return;
 	}
-	if (source_not_available) {
-		filter->rendering = false;
-		gs_texrender_t *tmp = filter->output_texrender;
-		filter->output_texrender = filter->input_texrender;
-		filter->input_texrender = tmp;
-		draw_output(filter);
-		return;
-	}
+
 	// 2. Apply effect to texture, and render texture to video
 	alpha_blur(filter->stroke_size + filter->stroke_offset,
 		   filter->ignore_source_border, filter->alpha_blur_data,

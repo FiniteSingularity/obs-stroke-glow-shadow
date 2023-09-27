@@ -253,10 +253,6 @@ static void glow_filter_video_render(void *data, gs_effect_t *effect)
 		return;
 	}
 
-	bool source_not_available =
-		(filter->fill_type == GLOW_FILL_TYPE_SOURCE) &&
-		!(filter->fill_source_source);
-
 	if (filter->rendering && filter->is_filter) {
 		obs_source_skip_video_filter(filter->context);
 		return;
@@ -277,14 +273,6 @@ static void glow_filter_video_render(void *data, gs_effect_t *effect)
 		filter->rendering = false;
 		return;
 	}
-	if (source_not_available) {
-		filter->rendering = false;
-		gs_texrender_t *tmp = filter->output_texrender;
-		filter->output_texrender = filter->input_texrender;
-		filter->input_texrender = tmp;
-		draw_output(filter);
-		return;
-	}
 
 	// 2. Apply effect to texture, and render texture to video
 	alpha_blur(filter->glow_size, filter->ignore_source_border,
@@ -293,12 +281,6 @@ static void glow_filter_video_render(void *data, gs_effect_t *effect)
 
 	// 3. Render glow effect to output
 	render_glow_filter(filter);
-
-	//filter->output_texrender =
-	//	create_or_reset_texrender(filter->output_texrender);
-	//gs_texrender_t *tmp = filter->output_texrender;
-	//filter->output_texrender = filter->alpha_blur_data->alpha_blur_output;
-	//filter->alpha_blur_data->alpha_blur_output = tmp;
 
 	// 4. Draw result (filter->output_texrender) to source
 	draw_output(filter);

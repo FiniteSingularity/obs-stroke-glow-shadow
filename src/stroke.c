@@ -188,8 +188,12 @@ void render_fill_stroke_filter(stroke_filter_data_t *data)
 				    data->fill ? 0.0f : 1.0f);
 	}
 
+	bool source_available = (data->fill_type ==
+					    		 STROKE_FILL_TYPE_SOURCE) &&
+				    			 data->fill_source_source;
+
 	gs_texrender_t *source_render = NULL;
-	if (data->fill_type == STROKE_FILL_TYPE_SOURCE) {
+	if (data->fill_type == STROKE_FILL_TYPE_SOURCE && source_available) {
 		obs_source_t *source =
 			data->fill_source_source
 				? obs_weak_source_get_source(
@@ -238,6 +242,12 @@ void render_fill_stroke_filter(stroke_filter_data_t *data)
 				data->param_fill_stroke_fill_source,
 				source_texture);
 		}
+	} else if(data->fill_type == STROKE_FILL_TYPE_SOURCE && !source_available) {
+		if(data->param_fill_stroke_fill_color) {
+			struct vec4 clear_color;
+			vec4_zero(&clear_color);
+			gs_effect_set_vec4(data->param_fill_stroke_fill_color, &clear_color);
+		}
 	} else if (data->fill_type == STROKE_FILL_TYPE_COLOR) {
 		if (data->param_fill_stroke_fill_color) {
 			gs_effect_set_vec4(data->param_fill_stroke_fill_color,
@@ -245,8 +255,9 @@ void render_fill_stroke_filter(stroke_filter_data_t *data)
 		}
 	}
 
+	bool fill_color = (data->fill_type == STROKE_FILL_TYPE_COLOR) || (data->fill_type == STROKE_FILL_TYPE_SOURCE && !source_available);
 	const char *fill_type =
-		data->fill_type == STROKE_FILL_TYPE_COLOR    ? "FilterColor"
+		data->fill_type ==  fill_color ? "FilterColor"
 		: data->fill_type == STROKE_FILL_TYPE_SOURCE ? "FilterSource"
 							     : "FilterSource";
 
