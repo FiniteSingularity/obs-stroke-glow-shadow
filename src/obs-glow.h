@@ -65,6 +65,7 @@ struct glow_filter_data {
 	float intensity;
 	bool ignore_source_border;
 	bool fill;
+	bool use_kawase;
 	struct vec2 offset_texel;
 
 	struct vec4 glow_color;

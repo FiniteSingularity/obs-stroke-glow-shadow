@@ -38,7 +38,9 @@ target_sources(${PROJECT_NAME} PRIVATE
 	src/stroke.h
 	src/version.h
 	src/blur/alpha-blur.c
-	src/blur/alpha-blur.h)
+	src/blur/alpha-blur.h
+	src/blur/dual-kawase.c
+	src/blur/dual-kawase.h)
 
 if(BUILD_OUT_OF_TREE)
 	find_package(libobs REQUIRED)

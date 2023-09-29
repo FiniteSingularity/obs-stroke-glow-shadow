@@ -17,3 +17,4 @@ gs_effect_t *load_shader_effect(gs_effect_t *effect,
 extern char *load_shader_from_file(const char *file_name);
 extern void setting_visibility(const char *prop_name, bool visible,
 			       obs_properties_t *props);
+extern void texrender_set_texture(gs_texture_t *source, gs_texrender_t *dest);
