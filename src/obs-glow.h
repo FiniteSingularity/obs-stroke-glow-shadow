@@ -26,6 +26,11 @@
 #define GLOW_POSITION_INNER_LABEL "GlowFilter.PositionInner"
 #define SHADOW_POSITION_INNER_LABEL "ShadowFilter.PositionInner"
 
+#define BLUR_TYPE_TRIANGULAR 1
+#define BLUR_TYPE_TRIANGULAR_LABEL "GlowShadowFilter.BlurType.Triangular"
+#define BLUR_TYPE_DUAL_KAWASE 2
+#define BLUR_TYPE_DUAL_KAWASE_LABEL "GlowShadowFilter.BlurType.DualKawase"
+
 #define FILTER_TYPE_GLOW 1
 #define FILTER_TYPE_SHADOW 2
 
@@ -65,6 +70,7 @@ struct glow_filter_data {
 	float intensity;
 	bool ignore_source_border;
 	bool fill;
+	uint32_t blur_type;
 	struct vec2 offset_texel;
 
 	struct vec4 glow_color;

@@ -8,6 +8,19 @@ void alpha_blur_init(alpha_blur_data_t *data) {
 	data->alpha_blur_output_2 = create_or_reset_texrender(data->alpha_blur_output_2);
 	data->param_blur_radius = NULL;
 	data->param_blur_texel_step = NULL;
+
+	data->effect_dual_kawase_downsample = NULL;
+	data->effect_dual_kawase_upsample = NULL;
+	data->effect_dual_kawase_mix = NULL;
+	data->render = create_or_reset_texrender(data->render);
+	data->render2 = create_or_reset_texrender(data->render2);
+
+	data->param_downsample_texel_step = NULL;
+	data->param_upsample_texel_step = NULL;
+
+	data->param_mix_ratio = NULL;
+	data->param_mix_image = NULL;
+	data->param_mix_image2 = NULL;
 }
 
 void alpha_blur_destroy(alpha_blur_data_t* data) {
@@ -25,6 +38,24 @@ void alpha_blur_destroy(alpha_blur_data_t* data) {
 	}
 	if (data->effect_alpha_blur) {
 		gs_effect_destroy(data->effect_alpha_blur);
+	}
+
+	if (data->render) {
+		gs_texrender_destroy(data->render);
+	}
+
+	if (data->render2) {
+		gs_texrender_destroy(data->render2);
+	}
+
+	if (data->effect_dual_kawase_downsample) {
+		gs_effect_destroy(data->effect_dual_kawase_downsample);
+	}
+	if (data->effect_dual_kawase_upsample) {
+		gs_effect_destroy(data->effect_dual_kawase_upsample);
+	}
+	if (data->effect_dual_kawase_mix) {
+		gs_effect_destroy(data->effect_dual_kawase_mix);
 	}
 }
 
