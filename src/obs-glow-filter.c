@@ -170,7 +170,7 @@ static void glow_filter_update(void *data, obs_data_t *settings)
 		obs_data_get_bool(settings, "ignore_source_border");
 	filter->fill = obs_data_get_bool(settings, "fill");
 
-	filter->use_kawase = obs_data_get_bool(settings, "use_kawase");
+	filter->blur_type = (uint32_t)obs_data_get_int(settings, "blur_type");
 
 	vec4_from_rgba(&filter->glow_color,
 		       (uint32_t)obs_data_get_int(settings, "glow_fill_color"));
@@ -278,7 +278,7 @@ static void glow_filter_video_render(void *data, gs_effect_t *effect)
 	}
 
 	// 2. Apply effect to texture, and render texture to video
-	if (!filter->use_kawase) {
+	if (filter->blur_type == BLUR_TYPE_TRIANGULAR) {
 		alpha_blur(filter->glow_size, filter->ignore_source_border,
 			   filter->alpha_blur_data, filter->input_texrender,
 			   filter->alpha_blur_data->alpha_blur_output);
@@ -349,7 +349,18 @@ static obs_properties_t *glow_filter_properties(void *data)
 		props, "ignore_source_border",
 		obs_module_text("StrokeCommon.IgnoreSourceBorder"));
 
-	obs_properties_add_bool(props, "use_kawase", "Use Kawase");
+	obs_property_t *blur_type_list = obs_properties_add_list(
+		props, "blur_type",
+		obs_module_text("GlowShadowFilter.BlurType"),
+		OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
+
+	obs_property_list_add_int(blur_type_list,
+				  obs_module_text(BLUR_TYPE_TRIANGULAR_LABEL),
+				  BLUR_TYPE_TRIANGULAR);
+	obs_property_list_add_int(blur_type_list,
+				  obs_module_text(BLUR_TYPE_DUAL_KAWASE_LABEL),
+				  BLUR_TYPE_DUAL_KAWASE);
+	
 
 	obs_properties_add_bool(props, "fill",
 				obs_module_text("GlowShadowFilter.FillSource"));
@@ -459,7 +470,7 @@ static void shadow_filter_defaults(obs_data_t *settings)
 				 DEFAULT_COLOR_SHADOW);
 	obs_data_set_default_int(settings, "glow_position",
 				 GLOW_POSITION_OUTER);
-	obs_data_set_default_bool(settings, "use_kawase", false);
+	obs_data_set_default_int(settings, "blur_type", BLUR_TYPE_TRIANGULAR);
 	obs_data_set_default_double(settings, "glow_offset_angle", 45.0);
 	obs_data_set_default_double(settings, "glow_offset_distance", 10.0);
 	obs_data_set_default_bool(settings, "ignore_source_border", true);
