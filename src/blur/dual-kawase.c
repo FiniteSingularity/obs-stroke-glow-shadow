@@ -118,6 +118,7 @@ void dual_kawase_blur(int radius, bool include_border,
 			     alpha_blur_data_t *data,
 			     gs_texrender_t *input)
 {
+	UNUSED_PARAMETER(include_border);
 	gs_texture_t *texture = gs_texrender_get_texture(input);
 	if (radius <= 1) {
 		data->alpha_blur_output =
