@@ -353,9 +353,10 @@ static obs_properties_t *stroke_filter_properties(void *data)
 		props, "stroke_fill_source",
 		obs_module_text("StrokeFilter.SourceFill"),
 		OBS_COMBO_TYPE_EDITABLE, OBS_COMBO_FORMAT_STRING);
-	obs_property_list_add_string(stroke_fill_source_source, "None", "Testing");
 	obs_enum_sources(add_source_to_list, stroke_fill_source_source);
 	obs_enum_scenes(add_source_to_list, stroke_fill_source_source);
+	obs_property_list_insert_string(stroke_fill_source_source, 0, "None",
+					"");
 
 	obs_properties_add_text(props, "plugin_info", PLUGIN_INFO,
 				OBS_TEXT_INFO);

@@ -41,7 +41,12 @@ bool add_source_to_list(void *data, obs_source_t *source)
 {
 	obs_property_t *p = data;
 	const char *name = obs_source_get_name(source);
-	obs_property_list_add_string(p, name, name);
+	size_t count = obs_property_list_item_count(p);
+	size_t idx = 0;
+	while (idx < count &&
+	       strcmp(name, obs_property_list_item_string(p, idx)) > 0)
+		idx++;
+	obs_property_list_insert_string(p, idx, name, name);
 	return true;
 }
 
@@ -128,7 +133,7 @@ char *load_shader_from_file(const char *file_name)
 }
 
 void setting_visibility(const char *prop_name, bool visible,
-			       obs_properties_t *props)
+			obs_properties_t *props)
 {
 	obs_property_t *p = obs_properties_get(props, prop_name);
 	obs_property_set_enabled(p, visible);

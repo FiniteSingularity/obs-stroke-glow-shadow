@@ -259,7 +259,7 @@ static void glow_filter_video_render(void *data, gs_effect_t *effect)
 	if (filter->rendering && filter->is_filter) {
 		obs_source_skip_video_filter(filter->context);
 		return;
-	} else if(filter->rendering) {
+	} else if (filter->rendering) {
 		return;
 	}
 
@@ -360,7 +360,6 @@ static obs_properties_t *glow_filter_properties(void *data)
 	obs_property_list_add_int(blur_type_list,
 				  obs_module_text(BLUR_TYPE_DUAL_KAWASE_LABEL),
 				  BLUR_TYPE_DUAL_KAWASE);
-	
 
 	obs_properties_add_bool(props, "fill",
 				obs_module_text("GlowShadowFilter.FillSource"));
@@ -421,9 +420,9 @@ static obs_properties_t *glow_filter_properties(void *data)
 		props, "glow_fill_source",
 		obs_module_text("StrokeFilter.SourceFill"),
 		OBS_COMBO_TYPE_EDITABLE, OBS_COMBO_FORMAT_STRING);
-	obs_property_list_add_string(glow_fill_source_source, "None", "");
 	obs_enum_sources(add_source_to_list, glow_fill_source_source);
 	obs_enum_scenes(add_source_to_list, glow_fill_source_source);
+	obs_property_list_insert_string(glow_fill_source_source, 0, "None", "");
 
 	obs_properties_add_text(props, "plugin_info", PLUGIN_INFO,
 				OBS_TEXT_INFO);
