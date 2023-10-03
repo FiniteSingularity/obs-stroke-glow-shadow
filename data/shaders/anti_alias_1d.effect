@@ -1,3 +1,7 @@
+#define FXAA_SPAN_MAX 8.0f
+#define FXAA_REDUCE_MUL 1.0f/8.0f
+#define FXAA_REDUCE_MIN 1.0f/128.0f
+
 uniform float4x4 ViewProj;
 uniform texture2d image;
 
@@ -25,37 +29,33 @@ VertData mainTransform(VertData v_in)
 
 float4 mainImage(VertData v_in) : TARGET
 {
-	//float4 col = image.Sample(textureSampler, v_in.uv);
-	//float step_size = 0.5f / (float) size;
-	//for (int i = 1; i <= size; i++)
-	//{
-	//	col += image.Sample(textureSampler, v_in.uv + texel_step * (float) i * step_size);
-	//	col += image.Sample(textureSampler, v_in.uv - texel_step * (float) i * step_size);
-	//}
-	//col /= ((float)size * 2.0 + 1.0);
-	//return col;
+	float3 nw = image.Sample(textureSampler, v_in.uv + float2(-1.0f, -1.0f) * texel_step).rgb;
+	float3 ne = image.Sample(textureSampler, v_in.uv + float2( 1.0f, -1.0f) * texel_step).rgb;
+	float3 sw = image.Sample(textureSampler, v_in.uv + float2(-1.0f,  1.0f) * texel_step).rgb;
+	float3 se = image.Sample(textureSampler, v_in.uv + float2( 1.0f,  1.0f) * texel_step).rgb;
+	float3 m  = image.Sample(textureSampler, v_in.uv).rgb;
 
-	//float step_size = 1.0f / (float) size;
-	//float4 col = float4(0.0, 0.0, 0.0, 0.0);
-	//for (float i = -0.5; i < 0.51; i+=step_size)
-	//{
-	//	for (float j = -0.5; j < 0.51; j+=step_size)
-	//	{
-	//		col += image.Sample(textureSampler, v_in.uv + texel_step * float2(i, j));
-	//	}
-	//
-	//}
-	//col /= (float) size * (float) size;
-	//return col;
-	float4 col = float4(0.0, 0.0, 0.0, 0.0);
-	for (int k = 0; k < size * size; k++)
-	{
-		float4 o = image.Sample(textureSampler, v_in.uv + texel_step * float2(k % size - size / 2, k / size - size / 2) / float(size));
-		col += o;
-	}
-	col /= float(size * size);
-	col = pow(col, float4(1. / 2.2, 1. / 2.2, 1. / 2.2, 1. / 2.2));
-	return col;
+	float3 luma = float3(0.299f, 0.587f, 0.114f);
+	float lumaNW = dot(nw, luma);
+	float lumaNE = dot(ne, luma);
+	float lumaSW = dot(sw, luma);
+	float lumaSE = dot(se, luma);
+	float lumaM =  dot(m, luma);
+
+	float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
+	float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
+
+	float2 dir = float2(
+		-((lumaNW + lumaNE) - (lumaSW + lumaSE)),
+		((lumaNW + lumaSW) - (lumaNE + lumaSE)));
+	float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) * (0.25f * FXAA_REDUCE_MUL), FXAA_REDUCE_MIN);
+	float rcpDirMin = 1.0f / (min(abs(dir.x), abs(dir.y)) + dirReduce);
+	dir = min(float2(FXAA_SPAN_MAX, FXAA_SPAN_MAX), max(float2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX), dir * rcpDirMin)) * texel_step;
+
+	float3 rgbA = 0.5f * (image.Sample(textureSampler, v_in.uv + dir * (1.0 / 3.0 - 0.5)).xyz + image.Sample(textureSampler, v_in.uv + dir * (2.0f / 3.0f - 0.5f)).xyz);
+	float3 rgbB = rgbA * 0.5f + 0.25f * (image.Sample(textureSampler, v_in.uv + dir * -0.5f).xyz + image.Sample(textureSampler, v_in.uv + dir * 0.5f).xyz);
+	float lumaB = dot(rgbB, luma);
+	return lumaB < lumaMin || lumaB > lumaMax ? float4(rgbA, rgbA.r) : float4(rgbB, rgbB.r);
 }
 
 technique Draw

@@ -1,5 +1,3 @@
-#define EPS 0.000000000001
-
 uniform float4x4 ViewProj;
 uniform texture2d image;
 uniform texture2d stroke_mask;
@@ -28,46 +26,65 @@ VertData mainTransform(VertData v_in)
 
 float4 mainImageFilterColor(VertData v_in) : TARGET
 {
-	float mask_alpha = (stroke_mask.Sample(textureSampler, v_in.uv)).r;
-	float4 col = image.Sample(textureSampler, v_in.uv);
-	return col * col.a + stroke_fill_color * mask_alpha * (1.0-col.a);
+	float3 gamma = float3(2.2f, 2.2f, 2.2f);
+	float3 gamma_i = float3(0.454545f, 0.454545f, 0.454545f);
+	float mask_alpha = stroke_fill_color.a * (stroke_mask.Sample(textureSampler, v_in.uv)).a;
+	float4 color = image.Sample(textureSampler, v_in.uv);
+	
+	float3 color_rgb_l = pow(color.rgb, gamma);
+	float3 fill_l = pow(stroke_fill_color.rgb, gamma);
+	
+	float alpha = color.a + (1.0f - color.a) * mask_alpha;
+	
+	return float4(pow(color.rgb * color.a + fill_l.rgb * (1.0f - color.a), gamma_i), alpha);
 }
 
 float4 mainImageFilterSource(VertData v_in) : TARGET
 {
+	float3 gamma = float3(2.2f, 2.2f, 2.2f);
+	float3 gamma_i = float3(0.454545f, 0.454545f, 0.454545f);
+	
 	float4 col = image.Sample(textureSampler, v_in.uv);
 	float4 fill_col = stroke_fill_source.Sample(textureSampler, v_in.uv);
-	float mask_alpha = (stroke_mask.Sample(textureSampler, v_in.uv)).r;
-	return col * col.a + float4(fill_col.rgb, fill_col.a * mask_alpha) * (1.0-col.a);
+	float3 color_rgb_l = pow(col.rgb, gamma);
+	float3 fill_l = pow(fill_col.rgb, gamma);
+	
+	float mask_alpha = fill_col.a * (stroke_mask.Sample(textureSampler, v_in.uv)).a;
+
+	float alpha = col.a + (1.0f - col.a) * mask_alpha;
+
+	return float4(pow(col.rgb * col.a + fill_l.rgb * (1.0f - col.a), gamma_i), alpha);
 }
 
 float4 mainImageFilterColorInner(VertData v_in) : TARGET
 {
-	float4 col = image.Sample(textureSampler, v_in.uv);
-	float mask_alpha = (stroke_mask.Sample(textureSampler, v_in.uv)).r * col.a;
-	return stroke_fill_color * mask_alpha + col * (1.0 - mask_alpha);
+	float3 gamma = float3(2.2f, 2.2f, 2.2f);
+	float3 gamma_i = float3(0.454545f, 0.454545f, 0.454545f);
+	
+	float4 color = image.Sample(textureSampler, v_in.uv);
+	float3 color_rgb_l = pow(color.rgb, gamma);
+	float3 fill_l = pow(stroke_fill_color.rgb, gamma);
+	
+	float mask_alpha = (stroke_mask.Sample(textureSampler, v_in.uv)).a;
+
+	float alpha = clamp(mask_alpha + (1.0f - mask_alpha) * color.a, 0.0f, color.a);
+	return float4(pow(fill_l.rgb * mask_alpha + color_rgb_l * (1.0 - mask_alpha), gamma_i), alpha);
 }
 
 float4 mainImageFilterSourceInner(VertData v_in) : TARGET
 {
-	float4 col = image.Sample(textureSampler, v_in.uv);
+	float3 gamma = float3(2.2f, 2.2f, 2.2f);
+	float3 gamma_i = float3(0.454545f, 0.454545f, 0.454545f);
+	
+	float4 color = image.Sample(textureSampler, v_in.uv);
 	float4 fill_col = stroke_fill_source.Sample(textureSampler, v_in.uv);
-	float mask_alpha = (stroke_mask.Sample(textureSampler, v_in.uv)).r * col.a;
-	//return stroke_mask.Sample(textureSampler, v_in.uv);
-	return fill_col * mask_alpha + col * (1.0 - mask_alpha);
-}
+	float3 color_rgb_l = pow(color.rgb, gamma);
+	float3 fill_l = pow(fill_col.rgb, gamma);
+	
+	float mask_alpha = (stroke_mask.Sample(textureSampler, v_in.uv)).a;
 
-float4 mainImageSourceColor(VertData v_in) : TARGET
-{
-	float mask_alpha = (stroke_mask.Sample(textureSampler, v_in.uv)).r;
-	return float4(stroke_fill_color.rgb, stroke_fill_color.a * mask_alpha);
-}
-
-float4 mainImageSourceSource(VertData v_in) : TARGET
-{
-	float mask_alpha = (stroke_mask.Sample(textureSampler, v_in.uv)).r;
-	float4 fill_col = stroke_fill_source.Sample(textureSampler, v_in.uv);
-	return float4(fill_col.rgb, fill_col.a * mask_alpha);
+	float alpha = clamp(mask_alpha + (1.0f - mask_alpha) * color.a, 0.0f, color.a);
+	return float4(pow(fill_l.rgb * mask_alpha + color_rgb_l * (1.0 - mask_alpha), gamma_i), alpha);
 }
 
 technique FilterColorOuter
@@ -103,23 +120,5 @@ technique FilterSourceInner
 	{
 		vertex_shader = mainTransform(v_in);
 		pixel_shader = mainImageFilterSourceInner(v_in);
-	}
-}
-
-technique SourceColor
-{
-	pass
-	{
-		vertex_shader = mainTransform(v_in);
-		pixel_shader = mainImageSourceColor(v_in);
-	}
-}
-
-technique SourceSource
-{
-	pass
-	{
-		vertex_shader = mainTransform(v_in);
-		pixel_shader = mainImageSourceSource(v_in);
 	}
 }
