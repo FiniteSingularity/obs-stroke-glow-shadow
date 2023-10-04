@@ -6,7 +6,6 @@ uniform texture2d glow_mask;
 uniform float intensity;
 uniform float2 offset;
 
-
 sampler_state textureSampler{
     Filter = Linear;
     AddressU = Clamp;
@@ -29,36 +28,62 @@ VertData mainTransform(VertData v_in)
 
 float4 mainImageOuterGlowColor(VertData v_in) : TARGET
 {
+	float3 gamma = float3(2.2f, 2.2f, 2.2f);
+	float3 gamma_i = float3(0.454545f, 0.454545f, 0.454545f);
+	
 	float4 mask_col = glow_mask.Sample(textureSampler, v_in.uv - offset);
 	float4 color = image.Sample(textureSampler, v_in.uv);
-	float alpha = clamp(glow_fill_color.a * intensity * 2.0 * mask_col.a, 0.0, 1.0);
-	return color * color.a + float4(glow_fill_color.rgb, alpha) * (1.0 - color.a);
+	float3 color_rgb_l = pow(color.rgb, gamma);
+	float3 glow_fill_l = pow(glow_fill_color.rgb, gamma);
+	float mask_alpha = clamp(glow_fill_color.a * intensity * 2.0f * mask_col.a, 0.0f, 1.0f);
+	float alpha = color.a + (1.0f - color.a) * mask_alpha;
+	return float4(pow(color.rgb * color.a + glow_fill_l.rgb * (1.0f - color.a), gamma_i), alpha);
 }
 
 float4 mainImageOuterGlowSource(VertData v_in) : TARGET
 {
-	float4 mask_col = glow_mask.Sample(textureSampler, v_in.uv - offset);
+	float3 gamma = float3(2.2f, 2.2f, 2.2f);
+	float3 gamma_i = float3(0.454545f, 0.454545f, 0.454545f);
+
 	float4 color = image.Sample(textureSampler, v_in.uv);
-	float4 fill_col = glow_fill_source.Sample(textureSampler, v_in.uv);
-	float alpha = clamp(fill_col.a * intensity * 2.0 * mask_col.a, 0.0f, 1.0f);
-	return color * color.a + float4(fill_col.rgb, alpha) * (1.0-color.a);
+	float4 mask_col = glow_mask.Sample(textureSampler, v_in.uv - offset);
+	float4 glow_fill_col = glow_fill_source.Sample(textureSampler, v_in.uv);
+	float3 color_rgb_l = pow(color.rgb, gamma);
+	float3 glow_fill_l = pow(glow_fill_col.rgb, gamma);
+	float mask_alpha = clamp(glow_fill_col.a * intensity * 2.0f * mask_col.a, 0.0f, 1.0f);
+	float alpha = color.a + (1.0f - color.a) * mask_alpha;
+	return float4(pow(color.rgb * color.a + glow_fill_l.rgb * (1.0f - color.a), gamma_i), alpha);
 }
 
 float4 mainImageInnerGlowColor(VertData v_in) : TARGET
 {
+	float3 gamma = float3(2.2f, 2.2f, 2.2f);
+	float3 gamma_i = float3(0.454545f, 0.454545f, 0.454545f);
+	
 	float4 mask_col = glow_mask.Sample(textureSampler, v_in.uv - offset);
-	float4 col = image.Sample(textureSampler, v_in.uv);
-	float mask_alpha = clamp(intensity * 2.0 * (1.0 - mask_col.a), 0.0f, 1.0f) * col.a;
-	return glow_fill_color * mask_alpha + col * (1.0 - mask_alpha);
+	float4 color = image.Sample(textureSampler, v_in.uv);
+	float3 color_rgb_l = pow(color.rgb, gamma);
+	float3 glow_fill_l = pow(glow_fill_color.rgb, gamma);
+	
+	float mask_alpha = clamp(intensity * 2.0f * (1.0f - mask_col.a), 0.0f, 1.0f);
+	float alpha = clamp(mask_alpha + (1.0f - mask_alpha) * color.a, 0.0f, color.a);
+	return float4(pow(glow_fill_l.rgb * mask_alpha + color_rgb_l * (1.0 - mask_alpha), gamma_i), alpha);
 }
 
 float4 mainImageInnerGlowSource(VertData v_in) : TARGET
 {
+	float3 gamma = float3(2.2f, 2.2f, 2.2f);
+	float3 gamma_i = float3(0.454545f, 0.454545f, 0.454545f);
+	
 	float4 mask_col = glow_mask.Sample(textureSampler, v_in.uv - offset);
-	float4 col = image.Sample(textureSampler, v_in.uv);
+	float4 color = image.Sample(textureSampler, v_in.uv);
 	float4 fill_col = glow_fill_source.Sample(textureSampler, v_in.uv);
-	float mask_alpha = clamp(intensity * 2.0 * (1.0 - mask_col.a) * col.a, 0.0, 1.0);
-	return fill_col * mask_alpha + col * (1.0 - mask_alpha);
+	float3 color_rgb_l = pow(color.rgb, gamma);
+	float3 glow_fill_l = pow(fill_col.rgb, gamma);
+	
+	float mask_alpha = clamp(intensity * 2.0f * (1.0f - mask_col.a), 0.0f, 1.0f);
+	float alpha = clamp(mask_alpha + (1.0f - mask_alpha) * color.a, 0.0f, color.a);
+	return float4(pow(glow_fill_l.rgb * mask_alpha + color_rgb_l * (1.0 - mask_alpha), gamma_i), alpha);
 }
 
 technique FilterOuterGlowColor
