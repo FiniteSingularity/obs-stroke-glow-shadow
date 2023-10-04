@@ -263,7 +263,7 @@ jobs:
           path: installer/*
       - name: Cleanup
         if: ${{ always() }}
-        uses: colpal/actions-clean@v1
+        run: rm -Recurse ${{github.workspace}}\*
 
   windows-package:
     name: "Windows Package"
@@ -335,4 +335,4 @@ jobs:
           name: "${{ env.FILE_NAME_X86 }}\n${{ env.FILE_NAME_X64 }}\ninstaller-files"
       - name: Cleanup
         if: ${{ always() }}
-        uses: colpal/actions-clean@v1
+        run: rm -Recurse ${{github.workspace}}\*
