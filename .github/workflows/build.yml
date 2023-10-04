@@ -187,7 +187,7 @@ jobs:
           path: "*.tar.gz"
   windows-build:
     name: "Windows Build"
-    runs-on: [self-hosted]
+    runs-on: [windows-latest]
     strategy:
       fail-fast: true
       matrix:
@@ -261,9 +261,6 @@ jobs:
         with:
           name: "installer-files"
           path: installer/*
-      - name: Cleanup
-        if: ${{ always() }}
-        run: rm -Recurse ${{github.workspace}}\*
 
   windows-package:
     name: "Windows Package"
@@ -335,4 +332,4 @@ jobs:
           name: "${{ env.FILE_NAME_X86 }}\n${{ env.FILE_NAME_X64 }}\ninstaller-files"
       - name: Cleanup
         if: ${{ always() }}
-        run: rm -Recurse ${{github.workspace}}\*
+        run: rm -Recurse ./*
