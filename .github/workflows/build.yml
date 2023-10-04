@@ -261,6 +261,10 @@ jobs:
         with:
           name: "installer-files"
           path: installer/*
+      - name: Cleanup
+        if: ${{ always() }}
+        uses: colpal/actions-clean@v1
+
   windows-package:
     name: "Windows Package"
     runs-on: [self-hosted]
@@ -329,3 +333,6 @@ jobs:
         uses: geekyeggo/delete-artifact@v2.0.0
         with:
           name: "${{ env.FILE_NAME_X86 }}\n${{ env.FILE_NAME_X64 }}\ninstaller-files"
+      - name: Cleanup
+        if: ${{ always() }}
+        uses: colpal/actions-clean@v1
