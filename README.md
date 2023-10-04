@@ -20,9 +20,6 @@
     </a>
 </h4>
 
-> **Warning**
-> It was brought to my attention that on a small number of Windows 11 machines, Windows Defender is flagging the Windows-Installer from releases 0.2.0 and 0.3.0 as malicious. After doing some analysis, it appears that this is due to our use of the Inno Setup installer, and the fact that we were not signing the code/installer. To fix this, I have gone through the process of obtaining a code signing certificate and will be able to sign releases after 0.3.0, which should get rid of the false-positive alert. In the meantime, I have taken down the windows-installers.  If you would like to install v0.2.0 or v0.3.0 on Windows you can manually install with the zip file (and the zip file and its contents are NOT flagged).
-
 > **Note**
 > While we only release new versions of the Stroke, Glow, Shadow plugin after testing it on local hardware, there are bugs and issues that will slip through. If you happen to run into any issues, please [open an issue](https://github.com/finitesingularity/obs-stroke-glow-shadow/issues) and we will work to resolve it.
 
