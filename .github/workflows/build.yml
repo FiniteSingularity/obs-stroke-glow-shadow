@@ -277,6 +277,9 @@ jobs:
           echo "FILE_NAME_X86=${env:FILE_NAME_X86}" >> ${env:GITHUB_ENV}
           $env:FILE_NAME_X64="${{ env.PLUGIN_NAME }}-${{ github.sha }}-windows-x64"
           echo "FILE_NAME_X64=${env:FILE_NAME_X64}" >> ${env:GITHUB_ENV}
+      - name: Setup Secrets
+        run: |
+          Write-Output "Setting up pin- ::add-mask::${{ secrets.SIGNING_KEY_PIN }}"
       - name: Retrieve x86 build
         uses: actions/download-artifact@v3.0.1
         with:
@@ -295,11 +298,11 @@ jobs:
       - name: Code Sign 32
         if: true || github.event_name != 'pull_request'
         run: |
-          &  'C:\Users\mdobo\Downloads\smartcardtools\x86\ScSignTool.exe' -pin ::add-mask::${{ secrets.SIGNING_KEY_PIN }} sign /fd sha256 /tr http://ts.ssl.com /td sha256 /n 'FiniteSingularity LLC' .\package\obs-plugins\32bit\${{ env.PLUGIN_NAME }}.dll
+          &  'C:\Users\mdobo\Downloads\smartcardtools\x86\ScSignTool.exe' -pin ${{ secrets.SIGNING_KEY_PIN }} sign /fd sha256 /tr http://ts.ssl.com /td sha256 /n 'FiniteSingularity LLC' .\package\obs-plugins\32bit\${{ env.PLUGIN_NAME }}.dll
       - name: Code Sign 64
         if: true || github.event_name != 'pull_request'
         run: |
-          & 'C:\Users\mdobo\Downloads\smartcardtools\x86\ScSignTool.exe' -pin ::add-mask::${{ secrets.SIGNING_KEY_PIN }} sign /fd sha256 /tr http://ts.ssl.com /td sha256 /n 'FiniteSingularity LLC' .\package\obs-plugins\64bit\${{ env.PLUGIN_NAME }}.dll
+          & 'C:\Users\mdobo\Downloads\smartcardtools\x86\ScSignTool.exe' -pin ${{ secrets.SIGNING_KEY_PIN }} sign /fd sha256 /tr http://ts.ssl.com /td sha256 /n 'FiniteSingularity LLC' .\package\obs-plugins\64bit\${{ env.PLUGIN_NAME }}.dll
       - name: Publish zip
         if: success()
         uses: actions/upload-artifact@v3.1.1
@@ -315,7 +318,7 @@ jobs:
       - name: Code Sign Installer
         if: true || github.event_name != 'pull_request'
         run: |
-          & 'C:\Users\mdobo\Downloads\smartcardtools\x86\ScSignTool.exe' -pin ::add-mask::${{ secrets.SIGNING_KEY_PIN }} sign /fd sha256 /tr http://ts.ssl.com /td sha256 /n 'FiniteSingularity LLC' .\package\${{ env.PLUGIN_NAME }}-installer.exe
+          & 'C:\Users\mdobo\Downloads\smartcardtools\x86\ScSignTool.exe' -pin ${{ secrets.SIGNING_KEY_PIN }} sign /fd sha256 /tr http://ts.ssl.com /td sha256 /n 'FiniteSingularity LLC' .\package\${{ env.PLUGIN_NAME }}-installer.exe
       - name: Publish installer
         if: success()
         uses: actions/upload-artifact@v3.1.1
