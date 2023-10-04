@@ -280,7 +280,8 @@ jobs:
           echo "FILE_NAME_X64=${env:FILE_NAME_X64}" >> ${env:GITHUB_ENV}
       - name: Setup Secrets
         run: |
-          Write-Output "Setting up pin- ::add-mask::${{ secrets.SIGNING_KEY_PIN }}"
+          Write-Output "Setting up signing pin- ::add-mask::${{ secrets.SIGNING_KEY_PIN }}"
+          Write-Output "Setting up signing org- ${{ secrets.SIGNING_ORG }}"
       - name: Retrieve x86 build
         uses: actions/download-artifact@v3.0.1
         with:
@@ -291,19 +292,23 @@ jobs:
         with:
           name: "${{ env.FILE_NAME_X64 }}"
           path: ./package
+      - name: Get ScSignTool
+        run: |
+          curl "-kL" "https://www.mgtek.com/files/smartcardtools.zip" "-f" "--retry" "5" "-o" "smartcardtools.zip"
+          7z x smartcardtools.zip -o"./smartcardtools"
       - name: Retrieve installer files
         uses: actions/download-artifact@v3.0.1
         with:
           name: "installer-files"
           path: .
       - name: Code Sign 32
-        if: true || github.event_name != 'pull_request'
+        if: success() || github.event_name != 'pull_request'
         run: |
-          &  'C:\Users\mdobo\Downloads\smartcardtools\x86\ScSignTool.exe' -pin ${{ secrets.SIGNING_KEY_PIN }} sign /fd sha256 /tr http://ts.ssl.com /td sha256 /n 'FiniteSingularity LLC' .\package\obs-plugins\32bit\${{ env.PLUGIN_NAME }}.dll
+          &  '.\smartcardtools\x86\ScSignTool.exe' -pin ${{ secrets.SIGNING_KEY_PIN }} sign /fd sha256 /tr http://ts.ssl.com /td sha256 /n '${{ secrets.SIGNING_ORG }}' .\package\obs-plugins\32bit\${{ env.PLUGIN_NAME }}.dll
       - name: Code Sign 64
-        if: true || github.event_name != 'pull_request'
+        if: success() || github.event_name != 'pull_request'
         run: |
-          & 'C:\Users\mdobo\Downloads\smartcardtools\x86\ScSignTool.exe' -pin ${{ secrets.SIGNING_KEY_PIN }} sign /fd sha256 /tr http://ts.ssl.com /td sha256 /n 'FiniteSingularity LLC' .\package\obs-plugins\64bit\${{ env.PLUGIN_NAME }}.dll
+          & '.\smartcardtools\x86\ScSignTool.exe' -pin ${{ secrets.SIGNING_KEY_PIN }} sign /fd sha256 /tr http://ts.ssl.com /td sha256 /n '${{ secrets.SIGNING_ORG }}' .\package\obs-plugins\64bit\${{ env.PLUGIN_NAME }}.dll
       - name: Publish zip
         if: success()
         uses: actions/upload-artifact@v3.1.1
@@ -317,9 +322,9 @@ jobs:
         run: |
           & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' /Qp ".\installer.iss"
       - name: Code Sign Installer
-        if: true || github.event_name != 'pull_request'
+        if: success() || github.event_name != 'pull_request'
         run: |
-          & 'C:\Users\mdobo\Downloads\smartcardtools\x86\ScSignTool.exe' -pin ${{ secrets.SIGNING_KEY_PIN }} sign /fd sha256 /tr http://ts.ssl.com /td sha256 /n 'FiniteSingularity LLC' .\package\${{ env.PLUGIN_NAME }}-installer.exe
+          & '.\smartcardtools\x86\ScSignTool.exe' -pin ${{ secrets.SIGNING_KEY_PIN }} sign /fd sha256 /tr http://ts.ssl.com /td sha256 /n '${{ secrets.SIGNING_ORG }}' .\package\${{ env.PLUGIN_NAME }}-installer.exe
       - name: Publish installer
         if: success()
         uses: actions/upload-artifact@v3.1.1
@@ -332,4 +337,4 @@ jobs:
           name: "${{ env.FILE_NAME_X86 }}\n${{ env.FILE_NAME_X64 }}\ninstaller-files"
       - name: Cleanup
         if: ${{ always() }}
-        run: rm -Recurse ./*
+        run: rm -Recurse -Force ./*
