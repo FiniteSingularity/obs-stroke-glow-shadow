@@ -31,15 +31,15 @@ float4 mainImageFilterColor(VertData v_in) : TARGET
 {
 	float4 col = image.Sample(textureSampler, v_in.uv);
 	float mask_alpha = (stroke_mask.Sample(textureSampler, v_in.uv)).a - fill_behind * col.a;
-	return float4(stroke_fill_color.rgb, mask_alpha);
+	return float4(stroke_fill_color.rgb, stroke_fill_color.a * mask_alpha);
 }
 
 float4 mainImageFilterSource(VertData v_in) : TARGET
 {
 	float4 col = image.Sample(textureSampler, v_in.uv);
-	float mask_alpha = (stroke_mask.Sample(textureSampler, v_in.uv)).a;
+	float mask_alpha = (stroke_mask.Sample(textureSampler, v_in.uv)).a - fill_behind * col.a;
 	float4 fill_col = stroke_fill_source.Sample(textureSampler, v_in.uv);
-	return float4(fill_col.rgb, fill_col.a * mask_alpha) * (1.0f - fill_behind * col.a);
+	return float4(fill_col.rgb, fill_col.a * mask_alpha);
 }
 
 float4 mainImageFilterColorInner(VertData v_in) : TARGET
