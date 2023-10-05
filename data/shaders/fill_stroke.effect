@@ -36,7 +36,7 @@ float4 mainImageFilterColor(VertData v_in) : TARGET
 	
 	float alpha = color.a + (1.0f - color.a) * mask_alpha;
 	
-	return float4(pow(color.rgb * color.a + fill_l.rgb * (1.0f - color.a), gamma_i), alpha);
+	return float4(pow(color_rgb_l.rgb * color.a + fill_l.rgb * (1.0f - color.a), gamma_i), alpha);
 }
 
 float4 mainImageFilterSource(VertData v_in) : TARGET
@@ -53,7 +53,7 @@ float4 mainImageFilterSource(VertData v_in) : TARGET
 
 	float alpha = col.a + (1.0f - col.a) * mask_alpha;
 
-	return float4(pow(col.rgb * col.a + fill_l.rgb * (1.0f - col.a), gamma_i), alpha);
+	return float4(pow(color_rgb_l.rgb * col.a + fill_l.rgb * (1.0f - col.a), gamma_i), alpha);
 }
 
 float4 mainImageFilterColorInner(VertData v_in) : TARGET

@@ -7,7 +7,7 @@
 struct obs_source_info obs_stroke_source = {
 	.id = "obs_stroke_source",
 	.type = OBS_SOURCE_TYPE_INPUT,
-	.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_CUSTOM_DRAW,
+	.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_CUSTOM_DRAW | OBS_SOURCE_SRGB,
 	.get_name = stroke_filter_name,
 	.create = stroke_filter_create,
 	.destroy = stroke_filter_destroy,
@@ -23,7 +23,7 @@ struct obs_source_info obs_stroke_source = {
 struct obs_source_info obs_stroke_filter = {
 	.id = "obs_stroke_filter",
 	.type = OBS_SOURCE_TYPE_FILTER,
-	.output_flags = OBS_SOURCE_VIDEO,
+	.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_SRGB,
 	.get_name = stroke_filter_name,
 	.create = stroke_filter_create,
 	.destroy = stroke_filter_destroy,
