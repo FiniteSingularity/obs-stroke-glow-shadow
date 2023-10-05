@@ -304,9 +304,6 @@ jobs:
         with:
           name: "${{ env.FILE_NAME }}"
           path: package/*
-      - name: "Package Installer (Prereqs)"
-        run: |
-          curl "-kL" "https://github.com/Xaymar/msvc-redist-helper/releases/download/0.1/msvc-redist-helper-64.exe" "-f" "--retry" "5" "-o" "msvc-redist-helper.exe"
       - name: "Package Installer (Compile)"
         run: |
           & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' /Qp ".\installer.iss"
