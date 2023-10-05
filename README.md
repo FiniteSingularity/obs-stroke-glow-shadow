@@ -1,5 +1,6 @@
-<h1 align="center">Stroke, Glow, Shadow Plugin</h1>
-
+<h1 align="center">
+    <img src="./.github/assets/images/stroke_glow_shadow_header.png" alt="Stroke Glow Shadow Logo">
+</h1>
 <p align="center">
     <i align="center">An OBS plugin to create strokes, glow, and shadows around masked sources.</i>
 </p>
@@ -43,8 +44,8 @@ The stroke effect draws a line with user-definable stroke size and offset around
 #### Stroke Filter Parameters
 <img src=".github/assets/images/stroke_interface.png" align="right">
 
-1. **Source**- *Only available when used as a source* Select the source used to generate the stroke.  In the case of a filter, this is the filtered source and this input will not be shown. If using the Stroke Source a source in this dropdown must be selected.
-2. **Position**- Select either Outer Stroke or Inner Stroke. Outer strokes are drawn from the edge of the mask outward, while inner strokes are drawn from the edge of the mask inward, over the top of the original source.
+1. **Source**- *Only available when used as a source* Select the source used to generate the stroke.  In the case of a filter, this is the filtered source and this input will not be shown.
+2. **Position**- Select either Outer Stroke or Inner Stroke. Outer strokes are drawn from the edge of the mask outward, while inner strokes are drawn from the edge of the mask inward over the top of the original source.
 3. **Options**- For an Outer Stroke if using the Stroke Source there is an option for `Infill Zero Offset` which will fill inside of the stroke if the offset is zero.  For an inner stroke, both the filter and source have the option `Ignore Source Border` which will suppress drawing a stroke anywhere the masked content meets the edge of the source (e.g.- if your masked facecam is aligned with the bottom of the source).
 4. **Stroke Size**- Specifies the thickness (in pixels) of the stroke.
 5. **Offset**- Indicates how many pixels from the edge of the mask you want the stroke to be drawn.
@@ -65,10 +66,11 @@ The glow effect draws a feathered stroke with a user-defined size and intensity 
 1. **Source**- *Only available when used as a source* Select the source used to generate the glow.  In the case of a filter, this is the filtered source and this input will not be shown. If using the Glow Source a source in this dropdown must be selected.
 2. **Position**- Select either Outer Glow or Inner Glow. Outer glows are drawn from the edge of the mask outward, while inner glows are drawn from the edge of the mask inward, over the top of the original source.
 3. **Options**- For an Outer Glow, if using the Glow Source, there is an option for Infill which will fill inside of the glow (the area that would be behind the original source). For an inner glow, both the filter and source have the option to Ignore Source Border, which will suppress drawing a glow anywhere the masked content meets the edge of the source (e.g., if your masked facecam is aligned with the bottom of the source).
-4. **Size**- Specifies the thickness (in pixels) of the glow.
-5. **Intensity**- Determines how bright the glow is.  Higher intesity values will have less feathering and brighter colors.
-6. **Fill Type**- Choose between Color or Source.
-7. The color or source to be used as fill.
+4. **Blur Type**- Choose either Triangular or Dual Kawase.  Triangular is a more accurate, less diffuse, and tighter blur, whereas Dual Kawase is significantly more efficient, and more spread out.
+5. **Size**- Specifies the thickness (in pixels) of the glow.
+6. **Intensity**- Determines how bright the glow is.  Higher intesity values will have less feathering and brighter colors.
+7. **Fill Type**- Choose between Color or Source.
+8. The color or source to be used as fill.
 
 ### Shadow
 
@@ -82,12 +84,13 @@ The shadow effect draws an offset drop-shadow simulating a light causing the sel
 1. **Source**- *Only available when used as a source* Select the source used to generate the shadow.  In the case of a filter, this is the filtered source and this input will not be shown. If using the Shadow Source a source in this dropdown must be selected.
 2. **Position**- Select either Outer or Inner Shadow. Outer shadows give the sense of the source floating over the top of the canvas, while inner shadows make the source appear as if it is in a cutout below the canvas.
 3. **Options**- For an Outer Shadow, if using the Shadow Source effect, there is an option for Infill which will fill inside of the shadow (the area that would be behind the original source). For an inner shadow, both the filter and source have the option to Ignore Source Border, which will suppress drawing a shadow anywhere the masked content meets the edge of the source (e.g., if your masked facecam is aligned with the bottom of the source).
-4. **Size**- Specifies the thickness (in pixels) of the feathered portion of the shadow.
-5. **Intensity**- Determines how strong the shadow is. Higher intensity values will have less feathering and more saturated colors (e.g., darker grays).
-6. **Light Angle**- Specifies the direction the shadow is cast.
-7. **Shadow Distance**- Indicates the distance in pixels that the shadow is cast.
-8. **Fill Type**- Select Color or Source.
-9.  The color or source to be used as fill.
+4. **Blur Type**- Choose either Triangular or Dual Kawase.  Triangular is a more accurate, less diffuse, and tighter blur, whereas Dual Kawase is significantly more efficient, and more spread out.
+5. **Size**- Specifies the thickness (in pixels) of the feathered portion of the shadow.
+6. **Intensity**- Determines how strong the shadow is. Higher intensity values will have less feathering and more saturated colors (e.g., darker grays).
+7. **Light Angle**- Specifies the direction the shadow is cast.
+8. **Shadow Distance**- Indicates the distance in pixels that the shadow is cast.
+9. **Fill Type**- Select Color or Source.
+10. The color or source to be used as fill.
 
 ## Fill Types
 A stroke, glow, or shadow can be filled using either a solid color or a source.
