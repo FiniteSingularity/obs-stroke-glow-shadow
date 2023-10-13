@@ -16,7 +16,7 @@ struct obs_source_info obs_stroke_source = {
 	.video_tick = stroke_filter_video_tick,
 	.get_width = stroke_filter_width,
 	.get_height = stroke_filter_height,
-	.get_properties = stroke_filter_properties,
+	.get_properties = stroke_source_properties,
 	.get_defaults = stroke_filter_defaults,
 	.icon_type = OBS_ICON_TYPE_COLOR};
 
@@ -140,12 +140,12 @@ static void stroke_filter_update(void *data, obs_data_t *settings)
 						  "stroke_fill_color"));
 
 	filter->fill_type =
-		(uint32_t)obs_data_get_int(settings, "stroke_fill_type");
+		(enum stroke_fill_type)obs_data_get_int(settings, "stroke_fill_type");
 
 	filter->offset_quality =
-		(uint32_t)obs_data_get_int(settings, "stroke_offset_quality");
+		(enum offset_quality)obs_data_get_int(settings, "stroke_offset_quality");
 	filter->stroke_position =
-		(uint32_t)obs_data_get_int(settings, "stroke_position");
+		(enum stroke_position)obs_data_get_int(settings, "stroke_position");
 	filter->anti_alias = obs_data_get_bool(settings, "anti_alias");
 	filter->ignore_source_border =
 		obs_data_get_bool(settings, "ignore_source_border");
@@ -256,14 +256,14 @@ static void stroke_filter_video_render(void *data, gs_effect_t *effect)
 	filter->rendering = false;
 }
 
-static obs_properties_t *stroke_filter_properties(void *data)
+static obs_properties_t *properties(void *data, bool is_source)
 {
 	stroke_filter_data_t *filter = data;
 
 	obs_properties_t *props = obs_properties_create();
 	obs_properties_set_param(props, filter, NULL);
 
-	if (filter->is_source) {
+	if (is_source) {
 		obs_property_t *stroke_source = obs_properties_add_list(
 			props, "stroke_source",
 			obs_module_text("StrokeSource.Source"),
@@ -288,7 +288,7 @@ static obs_properties_t *stroke_filter_properties(void *data)
 				  STROKE_POSITION_INNER);
 
 	obs_property_set_modified_callback2(
-		stroke_position_list, setting_stroke_position_modified, data);
+		stroke_position_list, setting_stroke_position_modified, (void*)is_source);
 
 	obs_properties_add_bool(
 		props, "ignore_source_border",
@@ -362,6 +362,14 @@ static obs_properties_t *stroke_filter_properties(void *data)
 				OBS_TEXT_INFO);
 
 	return props;
+}
+
+static obs_properties_t *stroke_filter_properties(void *data) {
+	return properties(data, false);
+}
+
+static obs_properties_t *stroke_source_properties(void *data) {
+	return properties(data, true);
 }
 
 static void stroke_filter_video_tick(void *data, float seconds)
@@ -476,7 +484,7 @@ static bool setting_fill_type_modified(obs_properties_t *props,
 				       obs_property_t *p, obs_data_t *settings)
 {
 	UNUSED_PARAMETER(p);
-	int fill_type = (int)obs_data_get_int(settings, "stroke_fill_type");
+	enum stroke_fill_type fill_type = (enum stroke_fill_type)obs_data_get_int(settings, "stroke_fill_type");
 	switch (fill_type) {
 	case STROKE_FILL_TYPE_COLOR:
 		setting_visibility("stroke_fill_color", true, props);
@@ -503,9 +511,9 @@ static bool setting_stroke_position_modified(void *data,
 					     obs_data_t *settings)
 {
 	UNUSED_PARAMETER(p);
-	stroke_filter_data_t *filter = data;
+	bool is_source = data;
 
-	int position = (int)obs_data_get_int(settings, "stroke_position");
+	enum stroke_position position = (enum stroke_position)obs_data_get_int(settings, "stroke_position");
 	switch (position) {
 	case STROKE_POSITION_INNER:
 		setting_visibility("ignore_source_border", true, props);
@@ -513,7 +521,7 @@ static bool setting_stroke_position_modified(void *data,
 		break;
 	case STROKE_POSITION_OUTER:
 		setting_visibility("ignore_source_border", false, props);
-		setting_visibility("fill", filter->is_source, props);
+		setting_visibility("fill", is_source, props);
 		break;
 	default:
 		break;

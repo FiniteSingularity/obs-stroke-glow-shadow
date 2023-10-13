@@ -9,7 +9,7 @@ else()
   cmake_minimum_required(VERSION 3.18)
 endif()
 
-project(obs-stroke-glow-shadow VERSION 1.0.0)
+project(obs-stroke-glow-shadow VERSION 1.0.1)
 set(PROJECT_FULL_NAME "Stroke Glow Shadow")
 
 # Set new UUIDs when you start to create a new plugin.
@@ -46,7 +46,7 @@ if(BUILD_OUT_OF_TREE)
 	find_package(libobs REQUIRED)
 	include(cmake/ObsPluginHelpers.cmake)
 endif()
-  
+
 if(OS_WINDOWS)
 	get_filename_component(ISS_FILES_DIR "${CMAKE_BINARY_DIR}\\..\\package" ABSOLUTE)
 	file(TO_NATIVE_PATH "${ISS_FILES_DIR}" ISS_FILES_DIR)
@@ -58,7 +58,7 @@ if(OS_WINDOWS)
 			"${PROJECT_BINARY_DIR}/installer.iss"
 		)
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resource.rc.in ${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}.rc)
-	target_sources(${PROJECT_NAME} PRIVATE 
+	target_sources(${PROJECT_NAME} PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}.rc)
 elseif(OS_MACOS)
 		set(MACOS_BUNDLEID "com.finitesingularity.${PROJECT_NAME}")
@@ -93,4 +93,3 @@ else()
         setup_plugin_target(${PROJECT_NAME})
     endif()
 endif()
-
