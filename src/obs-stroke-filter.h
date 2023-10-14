@@ -21,6 +21,7 @@ static uint32_t stroke_filter_height(void *data);
 static void stroke_filter_update(void *data, obs_data_t *settings);
 static void stroke_filter_video_render(void *data, gs_effect_t *effect);
 static obs_properties_t *stroke_filter_properties(void *data);
+static obs_properties_t *stroke_source_properties(void *data);
 static void stroke_filter_video_tick(void *data, float seconds);
 static void stroke_filter_defaults(obs_data_t *settings);
 static void get_input_source(stroke_filter_data_t *filter);

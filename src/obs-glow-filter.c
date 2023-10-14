@@ -33,7 +33,7 @@ struct obs_source_info obs_glow_source = {
 	.video_tick = glow_filter_video_tick,
 	.get_width = glow_filter_width,
 	.get_height = glow_filter_height,
-	.get_properties = glow_filter_properties,
+	.get_properties = glow_source_properties,
 	.get_defaults = glow_filter_defaults,
 	.icon_type = OBS_ICON_TYPE_COLOR};
 
@@ -49,7 +49,7 @@ struct obs_source_info obs_shadow_filter = {
 	.video_tick = glow_filter_video_tick,
 	.get_width = glow_filter_width,
 	.get_height = glow_filter_height,
-	.get_properties = glow_filter_properties,
+	.get_properties = shadow_filter_properties,
 	.get_defaults = shadow_filter_defaults};
 
 struct obs_source_info obs_shadow_source = {
@@ -64,7 +64,7 @@ struct obs_source_info obs_shadow_source = {
 	.video_tick = glow_filter_video_tick,
 	.get_width = glow_filter_width,
 	.get_height = glow_filter_height,
-	.get_properties = glow_filter_properties,
+	.get_properties = shadow_source_properties,
 	.get_defaults = shadow_filter_defaults,
 	.icon_type = OBS_ICON_TYPE_COLOR};
 
@@ -170,16 +170,16 @@ static void glow_filter_update(void *data, obs_data_t *settings)
 		obs_data_get_bool(settings, "ignore_source_border");
 	filter->fill = obs_data_get_bool(settings, "fill");
 
-	filter->blur_type = (uint32_t)obs_data_get_int(settings, "blur_type");
+	filter->blur_type = (enum blur_type)obs_data_get_int(settings, "blur_type");
 
 	vec4_from_rgba(&filter->glow_color,
 		       (uint32_t)obs_data_get_int(settings, "glow_fill_color"));
 
 	filter->fill_type =
-		(uint32_t)obs_data_get_int(settings, "glow_fill_type");
+		(enum glow_fill_type)obs_data_get_int(settings, "glow_fill_type");
 
 	filter->glow_position =
-		(uint32_t)obs_data_get_int(settings, "glow_position");
+		(enum glow_position)obs_data_get_int(settings, "glow_position");
 
 	if (filter->is_source) {
 		const char *glow_source_name =
@@ -298,14 +298,14 @@ static void glow_filter_video_render(void *data, gs_effect_t *effect)
 	filter->rendering = false;
 }
 
-static obs_properties_t *glow_filter_properties(void *data)
+static obs_properties_t *properties(void *data, bool is_source, enum filter_type filter_type)
 {
 	glow_filter_data_t *filter = data;
 
 	obs_properties_t *props = obs_properties_create();
 	obs_properties_set_param(props, filter, NULL);
 
-	if (filter->is_source) {
+	if (is_source) {
 		obs_property_t *stroke_source = obs_properties_add_list(
 			props, "glow_source",
 			obs_module_text("StrokeSource.Source"),
@@ -322,7 +322,7 @@ static obs_properties_t *glow_filter_properties(void *data)
 		obs_module_text("GlowShadowFilter.Position"),
 		OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
 
-	if (filter->filter_type == FILTER_TYPE_GLOW) {
+	if (filter_type == FILTER_TYPE_GLOW) {
 		obs_property_list_add_int(
 			glow_position_list,
 			obs_module_text(GLOW_POSITION_OUTER_LABEL),
@@ -374,7 +374,7 @@ static obs_properties_t *glow_filter_properties(void *data)
 		obs_module_text("GlowShadowFilter.Intensity"), 0.0, 200.0, 0.1);
 	obs_property_float_set_suffix(prop, "%");
 
-	if (filter->filter_type == FILTER_TYPE_SHADOW) {
+	if (filter_type == FILTER_TYPE_SHADOW) {
 		prop = obs_properties_add_float_slider(
 			props, "glow_offset_angle",
 			obs_module_text("ShadowFilter.OffsetAngle"), -180.0,
@@ -428,6 +428,26 @@ static obs_properties_t *glow_filter_properties(void *data)
 				OBS_TEXT_INFO);
 
 	return props;
+}
+
+static obs_properties_t *glow_filter_properties(void *data)
+{
+	return properties(data, false, FILTER_TYPE_GLOW);
+}
+
+static obs_properties_t *glow_source_properties(void *data)
+{
+	return properties(data, true, FILTER_TYPE_GLOW);
+}
+
+static obs_properties_t *shadow_filter_properties(void *data)
+{
+	return properties(data, false, FILTER_TYPE_SHADOW);
+}
+
+static obs_properties_t *shadow_source_properties(void *data)
+{
+	return properties(data, true, FILTER_TYPE_SHADOW);
 }
 
 static void glow_filter_video_tick(void *data, float seconds)
@@ -553,7 +573,7 @@ static bool setting_fill_type_modified(obs_properties_t *props,
 				       obs_property_t *p, obs_data_t *settings)
 {
 	UNUSED_PARAMETER(p);
-	int fill_type = (int)obs_data_get_int(settings, "glow_fill_type");
+	enum glow_fill_type fill_type = (enum glow_fill_type)obs_data_get_int(settings, "glow_fill_type");
 	switch (fill_type) {
 	case GLOW_FILL_TYPE_COLOR:
 		setting_visibility("glow_fill_color", true, props);
@@ -579,9 +599,9 @@ static bool setting_glow_position_modified(void *data, obs_properties_t *props,
 					   obs_data_t *settings)
 {
 	UNUSED_PARAMETER(p);
-	glow_filter_data_t *filter = data;
+	bool is_source = data;
 
-	int position = (int)obs_data_get_int(settings, "glow_position");
+	enum glow_position position = (enum glow_position)obs_data_get_int(settings, "glow_position");
 	switch (position) {
 	case GLOW_POSITION_INNER:
 		setting_visibility("ignore_source_border", true, props);
@@ -589,7 +609,7 @@ static bool setting_glow_position_modified(void *data, obs_properties_t *props,
 		break;
 	case GLOW_POSITION_OUTER:
 		setting_visibility("ignore_source_border", false, props);
-		setting_visibility("fill", filter->is_source, props);
+		setting_visibility("fill", is_source, props);
 		break;
 	default:
 		break;

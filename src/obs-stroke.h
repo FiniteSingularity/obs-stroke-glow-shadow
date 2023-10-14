@@ -9,22 +9,31 @@
 
 #define DEFAULT_COLOR 4294967295
 
-#define STROKE_FILL_TYPE_COLOR 1
 #define STROKE_FILL_TYPE_COLOR_LABEL "StrokeFilter.ColorFill"
-#define STROKE_FILL_TYPE_SOURCE 2
 #define STROKE_FILL_TYPE_SOURCE_LABEL "StrokeFilter.SourceFill"
-#define STROKE_FILL_TYPE_IMAGE 3
 #define STROKE_FILL_TYPE_IMAGE_LABEL "StrokeFilter.ImageFill"
 
-#define OFFSET_QUALITY_NORMAL 1
+enum stroke_fill_type {
+	STROKE_FILL_TYPE_COLOR = 1,
+	STROKE_FILL_TYPE_SOURCE,
+	STROKE_FILL_TYPE_IMAGE,
+};
+
 #define OFFSET_QUALITY_NORMAL_LABEL "StrokeFilter.OffsetQualityNormal"
-#define OFFSET_QUALITY_HIGH 2
 #define OFFSET_QUALITY_HIGH_LABEL "StrokeFilter.OffsetQualityHigh"
 
-#define STROKE_POSITION_OUTER 1
+enum offset_quality {
+	OFFSET_QUALITY_NORMAL = 1,
+	OFFSET_QUALITY_HIGH,
+};
+
 #define STROKE_POSITION_OUTER_LABEL "StrokeFilter.StrokePositionOuter"
-#define STROKE_POSITION_INNER 2
 #define STROKE_POSITION_INNER_LABEL "StrokeFilter.StrokePositionInner"
+
+enum stroke_position {
+	STROKE_POSITION_OUTER = 1,
+	STROKE_POSITION_INNER,
+};
 
 struct stroke_filter_data;
 typedef struct stroke_filter_data stroke_filter_data_t;
@@ -69,11 +78,11 @@ struct stroke_filter_data {
 	bool fill;
 
 	struct vec4 stroke_color;
-	uint32_t fill_type;
+	enum stroke_fill_type fill_type;
 	obs_weak_source_t *fill_source_source;
 
-	uint32_t offset_quality;
-	uint32_t stroke_position;
+	enum offset_quality offset_quality;
+	enum stroke_position stroke_position;
 
 	gs_eparam_t *param_stroke_texel_step;
 	gs_eparam_t *param_stroke_stroke_thickness;
