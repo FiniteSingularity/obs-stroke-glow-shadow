@@ -149,6 +149,7 @@ static void glow_filter_destroy(void *data)
 	alpha_blur_destroy(filter->alpha_blur_data);
 
 	obs_leave_graphics();
+	bfree(filter->alpha_blur_data);
 	bfree(filter);
 }
 
