@@ -142,9 +142,14 @@ static void glow_filter_destroy(void *data)
 		gs_texrender_destroy(filter->output_texrender);
 	}
 
+	if (filter->source_input_source) {
+		obs_weak_source_release(filter->source_input_source);
+	}
+
 	alpha_blur_destroy(filter->alpha_blur_data);
 
 	obs_leave_graphics();
+	bfree(filter->alpha_blur_data);
 	bfree(filter);
 }
 
