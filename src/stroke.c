@@ -267,8 +267,8 @@ void render_fill_stroke_filter(stroke_filter_data_t *data)
 				       : "Inner";
 
 	char shader_id[100] = "";
-	strncat(shader_id, fill_type, strlen(fill_type));
-	strncat(shader_id, position, strlen(position));
+	strcat(shader_id, fill_type);
+	strcat(shader_id, position);
 
 	set_blending_parameters();
 
