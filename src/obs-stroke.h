@@ -52,6 +52,7 @@ struct stroke_filter_data {
 	gs_effect_t *effect_stroke_inner;
 	gs_effect_t *effect_anti_alias;
 	gs_effect_t *effect_fill_stroke;
+	gs_effect_t *effect_output;
 
 	// Render pipeline
 	bool input_rendered;
@@ -101,6 +102,8 @@ struct stroke_filter_data {
 	gs_eparam_t *param_aa_texel_step;
 	gs_eparam_t *param_aa_size;
 	gs_eparam_t *param_aa_image;
+
+	gs_eparam_t *param_output_image;
 
 	// Callback Functions
 	void (*video_render)(stroke_filter_data_t *filter);
