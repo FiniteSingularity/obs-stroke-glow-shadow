@@ -33,10 +33,13 @@ float4 mainImageFilterColor(VertData v_in) : TARGET
 	
 	float3 color_rgb_l = pow(color.rgb, gamma);
 	float3 fill_l = pow(stroke_fill_color.rgb, gamma);
+
+	float alpha_threshold = 0.01;
+	float stroke_alpha = color.a < alpha_threshold ? 1.0f -color.a : 0.0;
 	
-	float alpha = color.a + (1.0f - color.a) * mask_alpha;
+	float alpha = color.a + (stroke_alpha) * mask_alpha;
 	
-	return float4(pow(color_rgb_l.rgb * color.a + fill_l.rgb * (1.0f - color.a), gamma_i), alpha);
+	return float4(pow(color_rgb_l.rgb * color.a + fill_l.rgb * (stroke_alpha), gamma_i), alpha);
 }
 
 float4 mainImageFilterSource(VertData v_in) : TARGET
