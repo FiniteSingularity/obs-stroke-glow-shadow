@@ -24,6 +24,27 @@ void load_stroke_effect(stroke_filter_data_t *filter)
 	}
 }
 
+void load_output_effect(stroke_filter_data_t *filter)
+{
+	const char *effect_file_path = "/shaders/render_output.effect";
+	filter->effect_output =
+		load_shader_effect(filter->effect_output, effect_file_path);
+	if (filter->effect_output) {
+		size_t effect_count =
+			gs_effect_get_num_params(filter->effect_output);
+		for (size_t effect_index = 0; effect_index < effect_count;
+		     effect_index++) {
+			gs_eparam_t *param = gs_effect_get_param_by_idx(
+				filter->effect_output, effect_index);
+			struct gs_effect_param_info info;
+			gs_effect_get_param_info(param, &info);
+			if (strcmp(info.name, "output_image") == 0) {
+				filter->param_output_image = param;
+			}
+		}
+	}
+}
+
 void load_stroke_inner_effect(stroke_filter_data_t *filter)
 {
 	const char *effect_file_path = "/shaders/stroke_inner.effect";

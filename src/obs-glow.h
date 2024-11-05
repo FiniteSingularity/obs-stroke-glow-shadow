@@ -60,6 +60,7 @@ struct glow_filter_data {
 
 	// Effects
 	gs_effect_t *effect_glow;
+	gs_effect_t *effect_output;
 
 	// Render pipeline
 	bool input_rendered;
@@ -98,4 +99,6 @@ struct glow_filter_data {
 	gs_eparam_t *param_glow_intensity;
 	gs_eparam_t *param_glow_fill_behind;
 	gs_eparam_t *param_offset_texel;
+
+	gs_eparam_t *param_output_image;
 };

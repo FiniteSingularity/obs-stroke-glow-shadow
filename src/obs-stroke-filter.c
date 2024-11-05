@@ -416,58 +416,148 @@ static void get_input_source(stroke_filter_data_t *filter)
 			filter->input_texture_generated = false;
 			return;
 		}
-	}
 
-	const enum gs_color_space preferred_spaces[] = {
-		GS_CS_SRGB,
-		GS_CS_SRGB_16F,
-		GS_CS_709_EXTENDED,
-	};
-	const enum gs_color_space space = obs_source_get_color_space(
-		input_source, OBS_COUNTOF(preferred_spaces), preferred_spaces);
+		const enum gs_color_space preferred_spaces[] = {
+			GS_CS_SRGB,
+			GS_CS_SRGB_16F,
+			GS_CS_709_EXTENDED,
+		};
+		const enum gs_color_space space = obs_source_get_color_space(
+			input_source, OBS_COUNTOF(preferred_spaces), preferred_spaces);
 
-	// Set up a tex renderer for source
-	filter->input_texrender =
-		create_or_reset_texrender(filter->input_texrender);
-	uint32_t base_width = obs_source_get_width(input_source);
-	uint32_t base_height = obs_source_get_height(input_source);
-	filter->width = base_width;
-	filter->height = base_height;
-	gs_blend_state_push();
-	gs_blend_function(GS_BLEND_ONE, GS_BLEND_ZERO);
-	if (gs_texrender_begin_with_color_space(
-		    filter->input_texrender, base_width, base_height, space)) {
-		const float w = (float)base_width;
-		const float h = (float)base_height;
-		struct vec4 clear_color;
+		// Set up a tex renderer for source
+		filter->input_texrender =
+			create_or_reset_texrender(filter->input_texrender);
+		uint32_t base_width = obs_source_get_width(input_source);
+		uint32_t base_height = obs_source_get_height(input_source);
+		filter->width = base_width;
+		filter->height = base_height;
+		gs_blend_state_push();
+		gs_blend_function(GS_BLEND_ONE, GS_BLEND_ZERO);
+		if (gs_texrender_begin_with_color_space(
+			    filter->input_texrender, base_width, base_height, space)) {
+			const float w = (float)base_width;
+			const float h = (float)base_height;
+			struct vec4 clear_color;
 
-		vec4_zero(&clear_color);
-		gs_clear(GS_CLEAR_COLOR, &clear_color, 0.0f, 0);
-		gs_ortho(0.0f, w, 0.0f, h, -100.0f, 100.0f);
+			vec4_zero(&clear_color);
+			gs_clear(GS_CLEAR_COLOR, &clear_color, 0.0f, 0);
+			gs_ortho(0.0f, w, 0.0f, h, -100.0f, 100.0f);
 
-		obs_source_video_render(input_source);
-		gs_texrender_end(filter->input_texrender);
-		filter->input_texture_generated = w > 0 && h > 0;
-	} else {
-		filter->input_texture_generated = false;
-	}
-	gs_blend_state_pop();
-	if (filter->is_source) {
+			obs_source_video_render(input_source);
+			gs_texrender_end(filter->input_texrender);
+			filter->input_texture_generated = w > 0 && h > 0;
+		} else {
+			filter->input_texture_generated = false;
+		}
+		gs_blend_state_pop();
+
 		obs_source_release(input_source);
+	} else {
+		// Use the OBS default effect file as our effect.
+		gs_effect_t *pass_through =
+			obs_get_base_effect(OBS_EFFECT_DEFAULT);
+
+		// Set up our color space info.
+		const enum gs_color_space preferred_spaces[] = {
+			GS_CS_SRGB,
+			GS_CS_SRGB_16F,
+			GS_CS_709_EXTENDED,
+		};
+
+		const enum gs_color_space source_space =
+			obs_source_get_color_space(
+				obs_filter_get_target(input_source),
+				OBS_COUNTOF(preferred_spaces),
+				preferred_spaces);
+
+		const enum gs_color_format format =
+			gs_get_format_from_space(source_space);
+
+		// Set up our input_texrender to catch the output texture.
+		filter->input_texrender =
+			create_or_reset_texrender(filter->input_texrender);
+		filter->input_texture_generated = false;
+
+		// Start the rendering process with our correct color space params,
+		// And set up your texrender to recieve the created texture.
+		if (!obs_source_process_filter_begin_with_color_space(
+			    input_source, format, source_space,
+			    OBS_NO_DIRECT_RENDERING))
+			return;
+
+		uint32_t base_width = obs_source_get_width(input_source);
+		uint32_t base_height = obs_source_get_height(input_source);
+		filter->width = base_width;
+		filter->height = base_height;
+
+		if (gs_texrender_begin(filter->input_texrender, filter->width,
+				       filter->height)) {
+
+			gs_blend_state_push();
+			gs_reset_blend_state();
+			gs_enable_blending(false);
+			gs_blend_function(GS_BLEND_ONE, GS_BLEND_ZERO);
+
+			gs_ortho(0.0f, (float)filter->width, 0.0f,
+				 (float)filter->height, -100.0f, 100.0f);
+			const char *technique = "DrawAlphaDivide";
+			obs_source_process_filter_tech_end(
+				input_source, pass_through, filter->width,
+				filter->height, technique);
+			gs_texrender_end(filter->input_texrender);
+			gs_blend_state_pop();
+			filter->input_texture_generated = true;
+		}
 	}
 }
 
 static void draw_output(stroke_filter_data_t *filter)
 {
-	gs_texture_t *texture =
-		gs_texrender_get_texture(filter->output_texrender);
-	gs_effect_t *pass_through = obs_get_base_effect(OBS_EFFECT_DEFAULT);
-	gs_eparam_t *param = gs_effect_get_param_by_name(pass_through, "image");
-	gs_effect_set_texture(param, texture);
-	uint32_t width = gs_texture_get_width(texture);
-	uint32_t height = gs_texture_get_height(texture);
-	while (gs_effect_loop(pass_through, "Draw")) {
-		gs_draw_sprite(texture, 0, width, height);
+	if (filter->is_source) {
+		gs_texture_t *texture =
+			gs_texrender_get_texture(filter->output_texrender);
+		gs_effect_t *pass_through = obs_get_base_effect(OBS_EFFECT_DEFAULT);
+		gs_eparam_t *param = gs_effect_get_param_by_name(pass_through, "image");
+		gs_effect_set_texture(param, texture);
+		uint32_t width = gs_texture_get_width(texture);
+		uint32_t height = gs_texture_get_height(texture);
+		while (gs_effect_loop(pass_through, "Draw")) {
+			gs_draw_sprite(texture, 0, width, height);
+		}
+	} else {
+		const enum gs_color_space preferred_spaces[] = {
+			GS_CS_SRGB,
+			GS_CS_SRGB_16F,
+			GS_CS_709_EXTENDED,
+		};
+
+		const enum gs_color_space source_space =
+			obs_source_get_color_space(
+				obs_filter_get_target(filter->context),
+				OBS_COUNTOF(preferred_spaces),
+				preferred_spaces);
+
+		const enum gs_color_format format =
+			gs_get_format_from_space(source_space);
+
+		if (!obs_source_process_filter_begin_with_color_space(
+			    filter->context, format, source_space,
+			    OBS_NO_DIRECT_RENDERING)) {
+			return;
+		}
+
+		gs_texture_t *texture =
+			gs_texrender_get_texture(filter->output_texrender);
+		gs_effect_t *pass_through = filter->effect_output;
+
+		if (filter->param_output_image) {
+			gs_effect_set_texture(filter->param_output_image,
+					      texture);
+		}
+
+		obs_source_process_filter_end(filter->context, pass_through,
+					      filter->width, filter->height);
 	}
 }
 
@@ -478,6 +568,7 @@ static void load_effects(stroke_filter_data_t *filter)
 	load_1d_anti_alias_effect(filter);
 	load_fill_stroke_effect(filter);
 	load_stroke_inner_effect(filter);
+	load_output_effect(filter);
 }
 
 static bool setting_fill_type_modified(obs_properties_t *props,
