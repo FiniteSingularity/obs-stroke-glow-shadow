@@ -14,7 +14,8 @@
 
 - Download the Ubuntu .tar.gz for your Ubuntu version (currently 20.04 and 22.04 are supported)
 - Extract the .tar.gz to a handy location.
-- Using your file manager, navigate to `~/.config/obs-studio/plugins`
+- Using your file manager, navigate to `~/.config/obs-studio/`
+- Then navigate into the `plugins` folder or create it if it does not exist.
 - Drop the `obs-stroke` folder into the plugins directory.
 - (Re)start OBS and now you should be able to add the Stroke filter.
 
