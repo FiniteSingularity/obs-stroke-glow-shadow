@@ -171,8 +171,7 @@ void render_glow_filter(glow_filter_data_t *data)
 				       : "FilterInnerGlow";
 
 	char shader_id[100] = "";
-	strncat(shader_id, position, strlen(position));
-	strncat(shader_id, fill_type, strlen(fill_type));
+	snprintf(shader_id, sizeof(shader_id), "%s%s", position, fill_type);
 
 	set_blending_parameters();
 
