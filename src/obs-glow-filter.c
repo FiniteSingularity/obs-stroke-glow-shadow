@@ -442,6 +442,7 @@ static obs_properties_t *properties(void *data, bool is_source, enum filter_type
 		props, "padding_amount",
 		obs_module_text("StrokeFilter.Padding.Amount"), 0, 4000, 1
 	);
+	obs_property_float_set_suffix(padding_amt, "px");
 
 	obs_property_t *blur_type_list = obs_properties_add_list(
 		props, "blur_type",

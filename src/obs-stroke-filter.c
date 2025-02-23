@@ -3,6 +3,7 @@
 #include "blur/alpha-blur.h"
 #include "anti-alias.h"
 #include "stroke.h"
+#include <math.h>
 
 struct obs_source_info obs_stroke_source = {
 	.id = "obs_stroke_source",
@@ -201,9 +202,9 @@ static void stroke_filter_update(void *data, obs_data_t *settings)
 	bool is_inner = filter->stroke_position == STROKE_POSITION_INNER || filter->stroke_position == STROKE_POSITION_INNER_CONTOUR;
 
 	if (is_inner) {
-		filter->jump_flood_threshold = (float)min(max(obs_data_get_double(settings, "jump_flood_threshold_inner"), 0.01), 99.99) / 100.0f;
+		filter->jump_flood_threshold = (float)fmin(fmax(obs_data_get_double(settings, "jump_flood_threshold_inner"), 0.01), 99.99) / 100.0f;
 	} else {
-		filter->jump_flood_threshold = (float)min(max(obs_data_get_double(settings, "jump_flood_threshold_outer"), 0.01), 99.99) / 100.0f;
+		filter->jump_flood_threshold = (float)fmin(fmax(obs_data_get_double(settings, "jump_flood_threshold_outer"), 0.01), 99.99) / 100.0f;
 	}
 
 	if (!filter->ignore_source_border && is_inner) {
@@ -508,6 +509,8 @@ static obs_properties_t *stroke_source_properties(void *data) {
 
 static enum gs_color_space stroke_source_get_color_space(void* data, size_t count, const enum gs_color_space* preferred_spaces) {
 	stroke_filter_data_t* filter = data;
+	UNUSED_PARAMETER(count);
+	UNUSED_PARAMETER(preferred_spaces);
 	const enum gs_color_space potential_spaces[] = {
 		GS_CS_SRGB,
 		GS_CS_SRGB_16F,

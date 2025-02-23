@@ -834,10 +834,8 @@ void render_jf_distance(stroke_filter_data_t* data)
 		: data->fill_type == STROKE_FILL_TYPE_SOURCE ? "Source"
 		: "Source";
 
-	char shader_id[100] = "Draw";
-	strncat(shader_id, render, strlen(render));
-	strncat(shader_id, innieOutie, strlen(innieOutie));
-	strncat(shader_id, fill_type, strlen(fill_type));
+	char shader_id[100] = "";
+	snprintf(shader_id, sizeof(shader_id), "Draw%s%s%s", render, innieOutie, fill_type);
 
 	if (gs_texrender_begin(data->output_texrender, data->width, data->height)) {
 		gs_ortho(0.0f, (float)data->width, 0.0f, (float)data->height,
