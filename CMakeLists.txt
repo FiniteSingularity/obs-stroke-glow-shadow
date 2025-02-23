@@ -15,6 +15,8 @@ set(PROJECT_FULL_NAME "Stroke Glow Shadow")
 # Set new UUIDs when you start to create a new plugin.
 set(MACOS_PACKAGE_UUID "e3e3b46c-5052-4739-8dfb-22806d02f0e2")
 set(MACOS_INSTALLER_UUID "28bbaaeb-f93b-4d11-af82-5d9eaa745ee4")
+set(OBS_BUNDLE_CODESIGN_IDENTITY, "Developer ID Application: Mark Dobossy (NSMTB4HHNL)")
+set(OBS_BUNDLE_CODESIGN_TEAM, "NSMTB4HHNL")
 
 add_library(${PROJECT_NAME} MODULE)
 
