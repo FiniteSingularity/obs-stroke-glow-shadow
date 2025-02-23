@@ -304,6 +304,10 @@ jobs:
         with:
           name: "${{ env.FILE_NAME }}"
           path: package/*
+      - name: "Package Installer (Prereqs)"
+        run: |
+          curl "-kL" "https://files.jrsoftware.org/is/6/innosetup-6.0.3.exe" "-f" "--retry" "5" "-o" "inno.exe"
+          .\inno.exe /VERYSILENT /SP- /SUPPRESSMSGBOXES /NORESTART
       - name: "Package Installer (Compile)"
         run: |
           & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' /Qp ".\installer.iss"
@@ -316,7 +320,7 @@ jobs:
       - name: Remove temp artifacts
         uses: geekyeggo/delete-artifact@v4.1.0
         with:
-          name: "${{ env.FILE_NAME_X86 }}\n${{ env.FILE_NAME_X64 }}\ninstaller-files"
+          name: "${{ env.FILE_NAME_X86 }}\n${{ env.FILE_NAME_X64 }}"
 
   windows-package-signed:
     name: "Windows Package Signed"
