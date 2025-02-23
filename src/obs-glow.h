@@ -2,10 +2,7 @@
 
 #include <obs-module.h>
 #include "blur/alpha-blur.h"
-
-#define PLUGIN_INFO                                                                                                         \
-	"<a href=\"https://github.com/finitesingularity/obs-stroke-glow-shadow/\">Stroke Glow Shadow</a> (" PROJECT_VERSION \
-	") by <a href=\"https://twitch.tv/finitesingularity\">FiniteSingularity</a>"
+#include "defines.h"
 
 // Default glow color: white in ABGR
 #define DEFAULT_COLOR_GLOW 0xFFFFFFFF
@@ -67,6 +64,7 @@ struct glow_filter_data {
 	gs_texrender_t *input_texrender;
 	bool output_rendered;
 	gs_texrender_t *output_texrender;
+	gs_texrender_t* alpha_mask_texrender;
 	// Frame Buffers
 
 	bool input_texture_generated;
@@ -76,6 +74,8 @@ struct glow_filter_data {
 
 	uint32_t width;
 	uint32_t height;
+	uint32_t source_width;
+	uint32_t source_height;
 
 	// Parameters
 	float glow_size;
@@ -84,8 +84,20 @@ struct glow_filter_data {
 	bool fill;
 	enum blur_type blur_type;
 	struct vec2 offset_texel;
+	float threshold;
+
+	uint32_t pad_t;
+	uint32_t pad_b;
+	uint32_t pad_l;
+	uint32_t pad_r;
+
+	uint32_t padding_amount;
+
+	struct vec2 mul_val;
+	struct vec2 add_val;
 
 	struct vec4 glow_color;
+	struct vec4 glow_color_srgb;
 	enum glow_fill_type fill_type;
 	obs_weak_source_t *fill_source_source;
 
@@ -99,6 +111,11 @@ struct glow_filter_data {
 	gs_eparam_t *param_glow_intensity;
 	gs_eparam_t *param_glow_fill_behind;
 	gs_eparam_t *param_offset_texel;
+
+	gs_eparam_t* param_mul_val;
+	gs_eparam_t* param_add_val;
+
+	gs_eparam_t* param_threshold;
 
 	gs_eparam_t *param_output_image;
 };

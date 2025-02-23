@@ -1,12 +1,17 @@
 uniform float4x4 ViewProj;
 uniform texture2d image;
 uniform texture2d glow_fill_source;
+uniform texture2d output_image;
 uniform float4 glow_fill_color;
 uniform texture2d glow_mask;
 uniform float intensity;
 uniform float2 offset;
 uniform float fill_behind = 0.0;
+// For crop/padding
+uniform float2 mul_val;
+uniform float2 add_val;
 
+uniform float threshold;
 
 sampler_state textureSampler{
     Filter = Linear;
@@ -16,11 +21,50 @@ sampler_state textureSampler{
     MaxLOD = 0;
 };
 
+sampler_state padSampler {
+	Filter    = Linear;
+	AddressU  = Border;
+	AddressV  = Border;
+	BorderColor = 00000000;
+};
+
 struct VertData
 {
 	float4 pos : POSITION;
 	float2 uv : TEXCOORD0;
 };
+
+VertData VSCrop(VertData v_in)
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv = v_in.uv * mul_val + add_val;
+	return vert_out;
+}
+
+
+float srgb_nonlinear_to_linear_channel(float u)
+{
+	return (u <= 0.04045) ? (u / 12.92) : pow((u + 0.055) / 1.055, 2.4);
+}
+
+float4 srgb_nonlinear_to_linear(float4 v)
+{
+	return float4(srgb_nonlinear_to_linear_channel(v.r), srgb_nonlinear_to_linear_channel(v.g), srgb_nonlinear_to_linear_channel(v.b), v.a);
+}
+
+float4 PSCrop(VertData v_in) : TARGET
+{
+	float4 rgba = image.Sample(padSampler, v_in.uv);
+	rgba.rgb *= (rgba.a > 0.) ? (1. / rgba.a) : 0.;
+	return rgba;
+}
+
+float4 drawOutput(VertData v_in) : TARGET
+{
+	float4 px = output_image.Sample(textureSampler, v_in.uv);
+	return px;
+}
 
 VertData mainTransform(VertData v_in)
 {
@@ -28,28 +72,36 @@ VertData mainTransform(VertData v_in)
 	return v_in;
 }
 
+float4 mainImageThresholdMask(VertData v_in) : TARGET
+{
+	float4 color = image.Sample(textureSampler, v_in.uv);
+	return float4(1.0, 1.0, 1.0, clamp(color.a / threshold, 0.0, 1.0));
+}
+
 float4 mainImageOuterGlowColor(VertData v_in) : TARGET
 {
-	float4 mask_col = glow_mask.Sample(textureSampler, v_in.uv - offset);
+	float4 mask_alpha = glow_mask.Sample(textureSampler, v_in.uv - offset);
 	float4 color = image.Sample(textureSampler, v_in.uv);
-	float alpha = clamp(glow_fill_color.a * intensity * 2.0 * mask_col.a, 0.0, 1.0);
-	return float4(glow_fill_color.rgb, alpha) * (1.0 - fill_behind * color.a);
+	float4 glow = float4(glow_fill_color.rgb, clamp(glow_fill_color.a * intensity * mask_alpha.a, 0.0f, 1.0f));
+	float blend_mask = clamp(step(threshold, color.a) + step(glow.a, 0.0001), 0.0, 1.0);
+	return fill_behind * glow + (1.0 - fill_behind) * (1.0 - blend_mask) * float4(glow.rgb, glow.a * step(color.a, threshold) * (1.0 - color.a));
 }
 
 float4 mainImageOuterGlowSource(VertData v_in) : TARGET
 {
-	float4 mask_col = glow_mask.Sample(textureSampler, v_in.uv - offset);
+	float4 mask_alpha = glow_mask.Sample(textureSampler, v_in.uv - offset);
 	float4 color = image.Sample(textureSampler, v_in.uv);
-	float4 fill_col = glow_fill_source.Sample(textureSampler, v_in.uv);
-	float alpha = clamp(fill_col.a * intensity * 2.0 * mask_col.a, 0.0f, 1.0f);
-	return float4(fill_col.rgb, alpha) * (1.0 - fill_behind * color.a);
+	float4 fill_color = glow_fill_source.Sample(textureSampler, v_in.uv);
+	float4 glow = float4(fill_color.rgb, clamp(fill_color.a * intensity * mask_alpha.a, 0.0f, 1.0f));
+	float blend_mask = clamp(step(threshold, color.a) + step(glow.a, 0.0001), 0.0, 1.0);
+	return fill_behind * glow + (1.0 - fill_behind) * (1.0 - blend_mask) * float4(glow.rgb, glow.a * step(color.a, threshold) * (1.0 - color.a));
 }
 
 float4 mainImageInnerGlowColor(VertData v_in) : TARGET
 {
 	float4 mask_col = glow_mask.Sample(textureSampler, v_in.uv - offset);
 	float4 col = image.Sample(textureSampler, v_in.uv);
-	float mask_alpha = clamp(intensity * 2.0 * (1.0 - mask_col.a), 0.0f, 1.0f) * col.a;
+	float mask_alpha = clamp(intensity * (1.0 - mask_col.a), 0.0f, 1.0f) * col.a;
 	return float4(glow_fill_color.rgb, glow_fill_color.a * mask_alpha);
 }
 
@@ -58,8 +110,35 @@ float4 mainImageInnerGlowSource(VertData v_in) : TARGET
 	float4 mask_col = glow_mask.Sample(textureSampler, v_in.uv - offset);
 	float4 col = image.Sample(textureSampler, v_in.uv);
 	float4 fill_col = glow_fill_source.Sample(textureSampler, v_in.uv);
-	float mask_alpha = clamp(intensity * 2.0 * (1.0 - mask_col.a) * col.a, 0.0, 1.0);
+	float mask_alpha = clamp(intensity * (1.0 - mask_col.a) * col.a, 0.0, 1.0);
 	return float4(fill_col.rgb, fill_col.a * mask_alpha);
+}
+
+technique DrawCropPad
+{
+	pass
+	{
+		vertex_shader = VSCrop(v_in);
+		pixel_shader = PSCrop(v_in);
+	}
+}
+
+technique DrawOutput
+{
+	pass
+	{
+		vertex_shader = VSCrop(v_in);
+		pixel_shader = drawOutput(v_in);
+	}
+}
+
+technique ThresholdMask
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = mainImageThresholdMask(v_in);
+	}
 }
 
 technique FilterOuterGlowColor
