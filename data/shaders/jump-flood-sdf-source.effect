@@ -1,0 +1,454 @@
+uniform float4x4 ViewProj;
+uniform texture2d image;
+uniform texture2d output_image;
+uniform texture2d overlay;
+uniform texture2d stroke_fill_source;
+uniform texture2d inner_distance_field;
+uniform texture2d outer_distance_field;
+
+uniform float2 uv_size;
+
+// Mask alpha Threshold
+uniform float threshold;
+
+// Jump Flood Step Offset
+uniform float offset;
+
+
+uniform float stroke_offset;
+uniform float stroke_extent;
+uniform float4 stroke_fill_color;
+
+uniform float contour_offset;
+uniform float contour_spacing;
+uniform float contour_falloff_start;
+uniform float contour_falloff_end;
+uniform float contour_spacing_power;
+
+uniform float infill;
+
+// For crop/padding
+uniform float2 mul_val;
+uniform float2 add_val;
+
+sampler_state sdfSampler{
+    Filter = Point;
+    AddressU = Clamp;
+    AddressV = Clamp;
+    MinLOD = 0;
+    MaxLOD = 0;
+    //BorderColor = 0xFFFFFFFF;
+};
+
+sampler_state textureSampler{
+    Filter = Linear;
+    AddressU = Clamp;
+    AddressV = Clamp;
+    MinLOD = 0;
+    MaxLOD = 0;
+};
+
+sampler_state padSampler {
+	Filter    = Linear;
+	AddressU  = Border;
+	AddressV  = Border;
+	BorderColor = 00000000;
+};
+
+float srgb_nonlinear_to_linear_channel(float u)
+{
+	return (u <= 0.04045) ? (u / 12.92) : pow((u + 0.055) / 1.055, 2.4);
+}
+
+float4 srgb_nonlinear_to_linear(float4 v)
+{
+	return float4(srgb_nonlinear_to_linear_channel(v.r), srgb_nonlinear_to_linear_channel(v.g), srgb_nonlinear_to_linear_channel(v.b), v.a);
+}
+
+float srgb_linear_to_nonlinear_channel(float u)
+{
+	return (u <= 0.0031308) ? (12.92 * u) : ((1.055 * pow(u, 1. / 2.4)) - 0.055);
+}
+
+float4 srgb_linear_to_nonlinear(float4 v)
+{
+	return float4(srgb_linear_to_nonlinear_channel(v.r), srgb_linear_to_nonlinear_channel(v.g), srgb_linear_to_nonlinear_channel(v.b), v.a);
+}
+
+
+struct VertData
+{
+	float4 pos : POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+
+VertData VSCrop(VertData v_in)
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv = v_in.uv * mul_val + add_val;
+	return vert_out;
+}
+
+float4 PSCrop(VertData v_in) : TARGET
+{
+	float4 rgba = image.Sample(padSampler, v_in.uv);
+	rgba.rgb *= (rgba.a > 0.) ? (1. / rgba.a) : 0.;
+	return rgba;
+	//return srgb_linear_to_nonlinear(rgba);
+}
+
+float4 drawOutput(VertData v_in) : TARGET
+{
+	float4 px = output_image.Sample(padSampler, v_in.uv);
+	return px;
+	//return srgb_nonlinear_to_linear(px);
+}
+
+VertData mainTransform(VertData v_in)
+{
+	v_in.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	return v_in;
+}
+
+float4 drawThresholdImage(VertData v_in) : TARGET
+{	
+	float2 coord = v_in.uv * uv_size;
+	float4 c = image.Sample(textureSampler, v_in.uv);
+	float a = step(threshold, c.a);
+	
+	return lerp(float4(32000.0, 32000.0, 0.0, 0.0), float4(coord, 0.0, 0.0), float4(a, a, a, a));
+}
+
+float4 drawThresholdImageInner(VertData v_in) : TARGET
+{
+	float2 coord = v_in.uv * uv_size;
+	float4 c = image.Sample(textureSampler, v_in.uv);
+	float a = 1.0 - step(threshold, c.a);
+	
+	//return float4(a, a, a, 1.0);
+	return lerp(float4(32000.0, 32000.0, 0.0, 0.0), float4(coord, 0.0, 0.0), float4(a, a, a, a));
+}
+
+float4 drawJumpFloodImage(VertData v_in) : TARGET
+{
+	float2 coord = v_in.uv * uv_size;
+	float minDist = 1.0e9;
+	float4 nearest = float4(32000.0, 32000.0, 0.0, 0.0);
+
+	for (int x = -1; x <= 1; x++)
+	{
+		for (int y = -1; y <= 1; y++)
+		{
+			float4 coord_s = image.Sample(sdfSampler, (coord + (offset * float2(x, y))) / uv_size);
+			float2 d = coord - coord_s.xy;
+			float d2 = dot(d, d);
+			//float d2 = distance(coord, coord_s.xy);
+			if (d2 < minDist)
+			{
+				minDist = d2;
+				nearest = float4(coord_s.xy, 0.0, 0.0);
+			}
+
+		}
+
+	}
+   
+	return nearest;
+}
+
+float4 drawStrokeColorImage(VertData v_in) : TARGET
+{
+	float2 coord = v_in.uv * uv_size;
+	float4 outer_distance_texture = outer_distance_field.Sample(sdfSampler, v_in.uv);
+	float4 c = overlay.Sample(textureSampler, v_in.uv);
+	float d = distance(coord, outer_distance_texture.xy);
+	float s = clamp(stroke_extent - d, 0.0, 1.0) - clamp(stroke_offset - d, 0.0, 1.0);
+	float subtract_source = (1.0 - infill) * c.a / threshold;
+	float4 stroke = float4(stroke_fill_color.rgb, clamp((stroke_fill_color.a * s) - subtract_source, 0.0, 1.0));
+	return stroke;
+}
+
+float4 drawStrokeSourceImage(VertData v_in) : TARGET
+{
+	float2 coord = v_in.uv * uv_size;
+	float4 outer_distance_texture = outer_distance_field.Sample(sdfSampler, v_in.uv);
+	float4 fill_color = stroke_fill_source.Sample(textureSampler, v_in.uv);
+	float4 c = overlay.Sample(textureSampler, v_in.uv);
+	float d = distance(coord, outer_distance_texture.xy);
+	float s = clamp(stroke_extent - d, 0.0, 1.0) - clamp(stroke_offset - d, 0.0, 1.0);
+	float subtract_source = (1.0 - infill) * c.a / threshold;
+	float4 stroke = float4(fill_color.rgb, clamp((fill_color.a * s) - subtract_source, 0.0, 1.0));
+	return stroke;
+}
+
+
+float4 drawStrokeInnerColorImage(VertData v_in) : TARGET
+{
+	float2 coord = v_in.uv * uv_size;
+	float stroke_size = stroke_extent - stroke_offset;
+	float4 distance_texture = inner_distance_field.Sample(sdfSampler, v_in.uv);
+	float4 c = overlay.Sample(textureSampler, v_in.uv);
+	
+	float4 c_u = overlay.Sample(textureSampler, (coord + float2(0.0, -1.0)) / uv_size);
+	float4 c_d = overlay.Sample(textureSampler, (coord + float2(0.0, 1.0)) / uv_size);
+	float4 c_l = overlay.Sample(textureSampler, (coord + float2(-1.0, 0.0)) / uv_size);
+	float4 c_r = overlay.Sample(textureSampler, (coord + float2(1.0, 0.0)) / uv_size);
+	float4 c_p = float4(c.rgb, c.a * step(threshold, c.a));
+
+	// 0 if bordering alpha 0, 1 if not.
+	float edge = c_p.a * (1.0 - step(threshold, c_u.a) * step(threshold, c_d.a) * step(threshold, c_r.a) * step(threshold, c_l.a));
+
+	float d = distance(coord, distance_texture.xy);
+	float s = clamp(stroke_extent - d, 0.0, 1.0) - clamp(stroke_offset - d, 0.0, 1.0);
+
+	float blend = step(threshold, c_p.a) + (1.0 - step(threshold, c_p.a)) * c_p.a;
+	float4 stroke = float4(stroke_fill_color.rgb, stroke_fill_color.a * s * blend);
+	//stroke = stroke * stroke.a + c * (1.0 - stroke.a);
+	stroke.a = (1.0 - stroke_offset) * edge < 0.0001 ? stroke.a : c.a;
+	return stroke * step(0.01, stroke_size);
+}
+
+float4 drawStrokeInnerSourceImage(VertData v_in) : TARGET
+{
+	float2 coord = v_in.uv * uv_size;
+	float stroke_size = stroke_extent - stroke_offset;
+	float4 distance_texture = inner_distance_field.Sample(sdfSampler, v_in.uv);
+	float4 c = overlay.Sample(textureSampler, v_in.uv);
+	float4 fill_color = stroke_fill_source.Sample(textureSampler, v_in.uv);
+	
+	float4 c_u = overlay.Sample(textureSampler, (coord + float2(0.0, -1.0)) / uv_size);
+	float4 c_d = overlay.Sample(textureSampler, (coord + float2(0.0, 1.0)) / uv_size);
+	float4 c_l = overlay.Sample(textureSampler, (coord + float2(-1.0, 0.0)) / uv_size);
+	float4 c_r = overlay.Sample(textureSampler, (coord + float2(1.0, 0.0)) / uv_size);
+
+	float4 c_p = float4(c.rgb, c.a * step(threshold, c.a));
+
+	// 0 if bordering alpha 0, 1 if not.
+	float edge = c_p.a * (1.0 - step(threshold, c_u.a) * step(threshold, c_d.a) * step(threshold, c_r.a) * step(threshold, c_l.a));
+
+	float d = distance(coord, distance_texture.xy);
+	float s = clamp(stroke_extent - d, 0.0, 1.0) - clamp(stroke_offset - d, 0.0, 1.0);
+
+	float blend = step(threshold, c_p.a) + (1.0 - step(threshold, c_p.a)) * c_p.a;
+	float4 stroke = float4(fill_color.rgb, fill_color.a * s * blend);
+	
+	stroke.a = (1.0 - stroke_offset) * edge < 0.0001 ? stroke.a : c.a;
+	return stroke * step(0.01, stroke_size);
+}
+
+float4 drawContourColorImage(VertData v_in) : TARGET
+{
+	float2 coord = v_in.uv * uv_size;
+	float4 c = overlay.Sample(textureSampler, v_in.uv);
+
+	float4 distance_texture = outer_distance_field.Sample(sdfSampler, v_in.uv);
+	float d = distance(coord, distance_texture.xy);
+	float contour_d = pow(d, contour_spacing_power) + contour_offset;
+	float contour_m = fmod(contour_d, stroke_extent + contour_spacing);
+	float aa_t = clamp(1.0 - (contour_m - stroke_extent), 0.0, 1.0);
+	float aa_b = contour_m < 1.0 ? contour_m : 1.0;
+	float contour = (contour_m < (stroke_extent + 0.01) ? 1.0 : aa_t) * aa_b;
+	float opacity = 1.0 - smoothstep(contour_falloff_start, contour_falloff_end, d);
+	float4 stroke = float4(stroke_fill_color.rgb, clamp(stroke_fill_color.a * (contour * opacity) - c.a/threshold, 0.0, 1.0));	
+	return stroke;
+}
+
+float4 drawContourSourceImage(VertData v_in) : TARGET
+{
+	float2 coord = v_in.uv * uv_size;
+	float4 c = overlay.Sample(textureSampler, v_in.uv);
+	float4 fill_color = stroke_fill_source.Sample(textureSampler, v_in.uv);
+	float4 distance_texture = outer_distance_field.Sample(sdfSampler, v_in.uv);
+	float d = distance(coord, distance_texture.xy);
+	float contour_d = pow(d, contour_spacing_power) + contour_offset;
+	float contour_m = fmod(contour_d, stroke_extent + contour_spacing);
+	float aa_t = clamp(1.0 - (contour_m - stroke_extent), 0.0, 1.0);
+	float aa_b = contour_m < 1.0 ? contour_m : 1.0;
+	float contour = (contour_m < (stroke_extent + 0.01) ? 1.0 : aa_t) * aa_b;
+	float opacity = 1.0 - smoothstep(contour_falloff_start, contour_falloff_end, d);
+	float4 stroke = float4(fill_color.rgb, clamp(fill_color.a * (contour * opacity) - c.a/threshold, 0.0, 1.0));	
+	return stroke;
+}
+
+float4 drawContourInnerColorImage(VertData v_in) : TARGET
+{
+	float2 coord = v_in.uv * uv_size;
+	float4 distance_texture = inner_distance_field.Sample(sdfSampler, v_in.uv);
+	float4 c = overlay.Sample(textureSampler, v_in.uv);
+
+	float4 c_u = overlay.Sample(textureSampler, (coord + float2(0.0, -1.0)) / uv_size);
+	float4 c_d = overlay.Sample(textureSampler, (coord + float2(0.0, 1.0)) / uv_size);
+	float4 c_l = overlay.Sample(textureSampler, (coord + float2(-1.0, 0.0)) / uv_size);
+	float4 c_r = overlay.Sample(textureSampler, (coord + float2(1.0, 0.0)) / uv_size);
+
+	float4 c_p = float4(c.rgb, c.a * step(threshold, c.a));
+
+	// 0 if bordering alpha 0, 1 if not.
+	float edge = c_p.a * (1.0 - step(threshold, c_u.a) * step(threshold, c_d.a) * step(threshold, c_r.a) * step(threshold, c_l.a));
+	
+	float d = distance(coord, distance_texture.xy);
+	float contour_d = pow(d, contour_spacing_power) + contour_offset;
+	float contour_m = fmod(contour_d, stroke_extent + contour_spacing);
+	float aa_t = clamp(1.0 - (contour_m - stroke_extent), 0.0, 1.0);
+	float aa_b = contour_m < 1.0 ? contour_m : 1.0;
+	float contour = (contour_m < (stroke_extent + 0.01) ? 1.0 : aa_t) * aa_b;
+	float opacity = 1.0 - smoothstep(contour_falloff_start, contour_falloff_end, d);
+	float4 stroke = float4(stroke_fill_color.rgb, stroke_fill_color.a * opacity);
+	stroke.a = (1.0 - stroke_offset) * edge < 0.0001 ? stroke.a : c.a;
+
+	stroke.a *= step(threshold, c.a) * contour;
+	return stroke;
+}
+
+float4 drawContourInnerSourceImage(VertData v_in) : TARGET
+{
+	float2 coord = v_in.uv * uv_size;
+	float4 distance_texture = inner_distance_field.Sample(sdfSampler, v_in.uv);
+	float4 fill_color = stroke_fill_source.Sample(textureSampler, v_in.uv);
+
+	float4 c = overlay.Sample(textureSampler, v_in.uv);
+
+	float4 c_u = overlay.Sample(textureSampler, (coord + float2(0.0, -1.0)) / uv_size);
+	float4 c_d = overlay.Sample(textureSampler, (coord + float2(0.0, 1.0)) / uv_size);
+	float4 c_l = overlay.Sample(textureSampler, (coord + float2(-1.0, 0.0)) / uv_size);
+	float4 c_r = overlay.Sample(textureSampler, (coord + float2(1.0, 0.0)) / uv_size);
+
+	float4 c_p = float4(c.rgb, c.a * step(threshold, c.a));
+
+	// 0 if bordering alpha 0, 1 if not.
+	float edge = c_p.a * (1.0 - step(threshold, c_u.a) * step(threshold, c_d.a) * step(threshold, c_r.a) * step(threshold, c_l.a));
+	
+	float d = distance(coord, distance_texture.xy);
+	float contour_d = pow(d, contour_spacing_power) + contour_offset;
+	float contour_m = fmod(contour_d, stroke_extent + contour_spacing);
+	//float contour_m_b = fmod(contour_d + 1, stroke_extent + contour_spacing);
+	float aa_t = clamp(1.0 - (contour_m - stroke_extent), 0.0, 1.0);
+	float aa_b = contour_m < 1.0 ? contour_m : 1.0;
+	float contour = (contour_m < (stroke_extent + 0.01) ? 1.0 : aa_t) * aa_b;
+	float opacity = 1.0 - smoothstep(contour_falloff_start, contour_falloff_end, d);
+	float4 stroke = float4(fill_color.rgb, fill_color.a * opacity);
+	stroke.a = (1.0 - stroke_offset) * edge < 0.0001 ? stroke.a : c.a;
+
+	stroke.a *= step(threshold, c.a) * contour;
+	return stroke;
+}
+
+technique DrawCropPad
+{
+	pass
+	{
+		vertex_shader = VSCrop(v_in);
+		pixel_shader = PSCrop(v_in);
+	}
+}
+
+technique DrawOutput
+{
+	pass
+	{
+		vertex_shader = VSCrop(v_in);
+		pixel_shader = drawOutput(v_in);
+	}
+}
+
+
+technique DrawThreshold
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = drawThresholdImage(v_in);
+	}
+}
+
+technique DrawThresholdInner
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = drawThresholdImageInner(v_in);
+	}
+}
+
+technique DrawJumpFloodStep
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = drawJumpFloodImage(v_in);
+	}
+}
+
+technique DrawStrokeColor
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = drawStrokeColorImage(v_in);
+	}
+}
+
+technique DrawStrokeInnerColor
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = drawStrokeInnerColorImage(v_in);
+	}
+}
+
+technique DrawStrokeSource
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = drawStrokeSourceImage(v_in);
+	}
+}
+
+technique DrawStrokeInnerSource
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = drawStrokeInnerSourceImage(v_in);
+	}
+}
+
+technique DrawContourColor
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = drawContourColorImage(v_in);
+	}
+}
+
+technique DrawContourInnerColor
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = drawContourInnerColorImage(v_in);
+	}
+}
+
+technique DrawContourInnerSource
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = drawContourInnerSourceImage(v_in);
+	}
+}
+
+technique DrawContourSource
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = drawContourSourceImage(v_in);
+	}
+}

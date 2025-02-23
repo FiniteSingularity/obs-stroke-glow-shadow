@@ -33,3 +33,5 @@ static bool setting_glow_position_modified(void *data,
 					   obs_properties_t *props,
 					   obs_property_t *p,
 					   obs_data_t *settings);
+static bool setting_glow_padding_modified(obs_properties_t* props,
+	obs_property_t* p, obs_data_t* settings);
