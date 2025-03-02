@@ -92,14 +92,15 @@ VertData VSCrop(VertData v_in)
 float4 PSCrop(VertData v_in) : TARGET
 {
 	float4 rgba = image.Sample(padSampler, v_in.uv);
-	rgba.rgb *= (rgba.a > 0.) ? (1. / rgba.a) : 0.;
-	return srgb_nonlinear_to_linear(rgba);
+	//rgba.rgb *= (rgba.a > 0.) ? (1. / rgba.a) : 0.;
+	return rgba;
+	//return srgb_nonlinear_to_linear(rgba);
 }
 
 float4 drawOutput(VertData v_in) : TARGET
 {
 	float4 px = output_image.Sample(textureSampler, v_in.uv);
-	return px;
+	return srgb_nonlinear_to_linear(px);
 }
 
 VertData mainTransform(VertData v_in)
@@ -160,10 +161,11 @@ float4 drawStrokeColorImage(VertData v_in) : TARGET
 	float2 coord = v_in.uv * uv_size;
 	float4 outer_distance_texture = outer_distance_field.Sample(sdfSampler, v_in.uv);
 	float4 c = overlay.Sample(textureSampler, v_in.uv);
+	c.rgb *= (c.a > 0.) ? (1. / c.a) : 0.;
 	float d = distance(coord, outer_distance_texture.xy);
 	float s = clamp(stroke_extent - d, 0.0, 1.0) - clamp(stroke_offset - d, 0.0, 1.0);
 	float4 stroke = float4(stroke_fill_color.rgb * step(0.01, s), stroke_fill_color.a * s);
-	return step(threshold, c.a) * c + (1.0 - step(threshold, c.a)) * (float4(c.rgb * c.a, c.a) + stroke * (1.0 - c.a));
+	return step(threshold, c.a) * float4(c.rgb * c.a, c.a) + (1.0 - step(threshold, c.a)) * (float4(c.rgb * c.a, c.a) + stroke * (1.0 - c.a));
 }
 
 float4 drawStrokeInnerColorImage(VertData v_in) : TARGET
@@ -171,7 +173,8 @@ float4 drawStrokeInnerColorImage(VertData v_in) : TARGET
 	float2 coord = v_in.uv * uv_size;
 	float4 distance_texture = inner_distance_field.Sample(sdfSampler, v_in.uv);
 	float4 c = overlay.Sample(textureSampler, v_in.uv);
-	
+	c.rgb *= (c.a > 0.) ? (1. / c.a) : 0.;
+
 	float4 c_u = overlay.Sample(textureSampler, (coord + float2(0.0, -1.0)) / uv_size);
 	float4 c_d = overlay.Sample(textureSampler, (coord + float2(0.0, 1.0)) / uv_size);
 	float4 c_l = overlay.Sample(textureSampler, (coord + float2(-1.0, 0.0)) / uv_size);
@@ -198,8 +201,12 @@ float4 drawStrokeInnerSourceImage(VertData v_in) : TARGET
 	float2 coord = v_in.uv * uv_size;
 	float4 distance_texture = inner_distance_field.Sample(sdfSampler, v_in.uv);
 	float4 c = overlay.Sample(textureSampler, v_in.uv);
+	c.rgb *= (c.a > 0.) ? (1. / c.a) : 0.;
+
 	float4 fill_color = srgb_nonlinear_to_linear(stroke_fill_source.Sample(textureSampler, v_in.uv));
-	
+	fill_color.rgb *= (fill_color.a > 0.) ? (1. / fill_color.a) : 0.;
+	fill_color = srgb_linear_to_nonlinear(fill_color);
+
 	float4 c_u = overlay.Sample(textureSampler, (coord + float2(0.0, -1.0)) / uv_size);
 	float4 c_d = overlay.Sample(textureSampler, (coord + float2(0.0, 1.0)) / uv_size);
 	float4 c_l = overlay.Sample(textureSampler, (coord + float2(-1.0, 0.0)) / uv_size);
@@ -226,7 +233,12 @@ float4 drawStrokeSourceImage(VertData v_in) : TARGET
 	float2 coord = v_in.uv * uv_size;
 	float4 distance_texture = outer_distance_field.Sample(sdfSampler, v_in.uv);
 	float4 c = overlay.Sample(textureSampler, v_in.uv);
+	c.rgb *= (c.a > 0.) ? (1. / c.a) : 0.;
+
 	float4 fill_color = srgb_nonlinear_to_linear(stroke_fill_source.Sample(textureSampler, v_in.uv));
+	fill_color.rgb *= (fill_color.a > 0.) ? (1. / fill_color.a) : 0.;
+	fill_color = srgb_linear_to_nonlinear(fill_color);
+
 	float d = distance(coord, distance_texture.xy);
 	float s = clamp(stroke_extent - d, 0.0, 1.0) - clamp(stroke_offset - d, 0.0, 1.0);
 	float4 stroke = float4(fill_color.rgb * step(0.01, s), fill_color.a * s * (1.0 - step(threshold, c.a)));
@@ -238,6 +250,8 @@ float4 drawContourColorImage(VertData v_in) : TARGET
 	float2 coord = v_in.uv * uv_size;
 	float4 distance_texture = outer_distance_field.Sample(sdfSampler, v_in.uv);
 	float4 c = overlay.Sample(textureSampler, v_in.uv);
+	c.rgb *= (c.a > 0.) ? (1. / c.a) : 0.;
+
 	float d = distance(coord, distance_texture.xy);
 	float contour_d = pow(d, contour_spacing_power) + contour_offset;
 	float contour_m = fmod(contour_d, stroke_extent + contour_spacing);
@@ -258,7 +272,12 @@ float4 drawContourSourceImage(VertData v_in) : TARGET
 	float2 coord = v_in.uv * uv_size;
 	float4 distance_texture = outer_distance_field.Sample(sdfSampler, v_in.uv);
 	float4 c = overlay.Sample(textureSampler, v_in.uv);
+	c.rgb *= (c.a > 0.) ? (1. / c.a) : 0.;
+
 	float4 fill_color = srgb_nonlinear_to_linear(stroke_fill_source.Sample(textureSampler, v_in.uv));
+	fill_color.rgb *= (fill_color.a > 0.) ? (1. / fill_color.a) : 0.;
+	fill_color = srgb_linear_to_nonlinear(fill_color);
+	
 	float d = distance(coord, distance_texture.xy);
 	float contour_d = pow(d, contour_spacing_power) + contour_offset;
 	float contour_m = fmod(contour_d, stroke_extent + contour_spacing);
@@ -276,6 +295,8 @@ float4 drawContourInnerColorImage(VertData v_in) : TARGET
 	float2 coord = v_in.uv * uv_size;
 	float4 distance_texture = inner_distance_field.Sample(sdfSampler, v_in.uv);
 	float4 c = overlay.Sample(textureSampler, v_in.uv);
+	c.rgb *= (c.a > 0.) ? (1. / c.a) : 0.;
+
 	float4 c_u = overlay.Sample(textureSampler, (coord + float2(0.0, -1.0)) / uv_size);
 	float4 c_d = overlay.Sample(textureSampler, (coord + float2(0.0, 1.0)) / uv_size);
 	float4 c_l = overlay.Sample(textureSampler, (coord + float2(-1.0, 0.0)) / uv_size);
@@ -307,6 +328,8 @@ float4 drawContourInnerSourceImage(VertData v_in) : TARGET
 	float2 coord = v_in.uv * uv_size;
 	float4 distance_texture = inner_distance_field.Sample(sdfSampler, v_in.uv);
 	float4 c = overlay.Sample(textureSampler, v_in.uv);
+	c.rgb *= (c.a > 0.) ? (1. / c.a) : 0.;
+
 	float4 c_u = overlay.Sample(textureSampler, (coord + float2(0.0, -1.0)) / uv_size);
 	float4 c_d = overlay.Sample(textureSampler, (coord + float2(0.0, 1.0)) / uv_size);
 	float4 c_l = overlay.Sample(textureSampler, (coord + float2(-1.0, 0.0)) / uv_size);
@@ -318,6 +341,9 @@ float4 drawContourInnerSourceImage(VertData v_in) : TARGET
 	float edge = c_p.a * (1.0 - step(threshold, c_u.a) * step(threshold, c_d.a) * step(threshold, c_r.a) * step(threshold, c_l.a));
 	
 	float4 fill_color = srgb_nonlinear_to_linear(stroke_fill_source.Sample(textureSampler, v_in.uv));
+	fill_color.rgb *= (fill_color.a > 0.) ? (1. / fill_color.a) : 0.;
+	fill_color = srgb_linear_to_nonlinear(fill_color);
+
 	float d = distance(coord, distance_texture.xy);
 	float contour_d = pow(d, contour_spacing_power) + contour_offset;
 	float contour_m = fmod(contour_d, stroke_extent + contour_spacing);

@@ -310,6 +310,10 @@ static void stroke_filter_video_render(void *data, gs_effect_t *effect)
 		return;
 	}
 
+	// gs_texrender_t *tmp = filter->output_texrender;
+	// filter->output_texrender = filter->input_texrender;
+	// filter->input_texrender = tmp;
+
 	// 2. Create Stroke Mask
 	if (filter->stroke_position == STROKE_POSITION_OUTER || filter->stroke_position == STROKE_POSITION_OUTER_CONTOUR) {
 		render_jf_outer_threshold(filter);
@@ -325,6 +329,11 @@ static void stroke_filter_video_render(void *data, gs_effect_t *effect)
 	}
 	
 	render_jf_distance(filter);
+
+
+	// gs_texrender_t *tmp = filter->output_texrender;
+	// filter->output_texrender = filter->input_texrender;
+	// filter->input_texrender = tmp;
 
 	// 3. Draw result (filter->output_texrender) to source
 	render_cropped_output(filter);

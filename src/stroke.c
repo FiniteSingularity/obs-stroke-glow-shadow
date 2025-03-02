@@ -691,7 +691,6 @@ void render_jf_distance(stroke_filter_data_t* data)
 
 	// Add logic here to check srgb of source stroke
 	const bool linear_srgb = gs_get_linear_srgb() || data->stroke_color.w < 1.0f;
-
 	data->output_texrender = create_or_reset_texrender(data->output_texrender);
 
 	if (odf_texture && data->param_outer_distance_field) {
@@ -808,8 +807,10 @@ void render_jf_distance(stroke_filter_data_t* data)
 		}
 	} else if (data->fill_type == STROKE_FILL_TYPE_COLOR) {
 		if (data->param_jump_flood_stroke_color) {
+			// gs_effect_set_vec4(data->param_jump_flood_stroke_color,
+			// 	linear_srgb ? &data->stroke_color_srgb : &data->stroke_color);
 			gs_effect_set_vec4(data->param_jump_flood_stroke_color,
-				linear_srgb ? &data->stroke_color_srgb : &data->stroke_color);
+				linear_srgb ? &data->stroke_color : &data->stroke_color);
 		}
 	}
 
