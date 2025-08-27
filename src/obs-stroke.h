@@ -3,6 +3,7 @@
 #include <obs-module.h>
 #include "blur/alpha-blur.h"
 #include "defines.h"
+#include <util/dstr.h>
 
 #define DEFAULT_COLOR 4294967295
 
@@ -44,6 +45,9 @@ struct stroke_filter_data {
 	alpha_blur_data_t *alpha_blur_data;
 
 	obs_weak_source_t *source_input_source;
+
+	struct dstr fill_source_name;
+	struct dstr source_name;
 
 	bool is_filter;
 	bool is_source;
@@ -112,6 +116,9 @@ struct stroke_filter_data {
 
 	enum stroke_fill_type fill_type;
 	obs_weak_source_t *fill_source_source;
+	bool has_fill_source;
+
+	bool has_source;
 
 	enum stroke_position stroke_position;
 

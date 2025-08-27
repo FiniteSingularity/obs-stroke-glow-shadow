@@ -47,6 +47,9 @@ static void *stroke_filter_create(obs_data_t *settings, obs_source_t *source)
 {
 	stroke_filter_data_t *filter = bzalloc(sizeof(stroke_filter_data_t));
 
+	dstr_init_copy(&filter->fill_source_name, "");
+	dstr_init_copy(&filter->source_name, "");
+
 	filter->alpha_blur_data = bzalloc(sizeof(alpha_blur_data_t));
 
 	filter->context = source;
@@ -88,6 +91,9 @@ static void stroke_filter_destroy(void *data)
 	stroke_filter_data_t *filter = data;
 
 	obs_enter_graphics();
+
+	dstr_free(&filter->fill_source_name);
+	dstr_free(&filter->source_name);
 
 	if (filter->effect_stroke) {
 		gs_effect_destroy(filter->effect_stroke);
@@ -229,38 +235,27 @@ static void stroke_filter_update(void *data, obs_data_t *settings)
 	filter->fill = obs_data_get_bool(settings, "fill");
 	const char *fill_source_name =
 		obs_data_get_string(settings, "stroke_fill_source");
-	obs_source_t *fill_source =
-		(fill_source_name && strlen(fill_source_name))
-			? obs_get_source_by_name(fill_source_name)
-			: NULL;
-	if (fill_source) {
-		obs_weak_source_release(filter->fill_source_source);
-		filter->fill_source_source =
-			obs_source_get_weak_source(fill_source);
-		obs_source_release(fill_source);
+
+	dstr_copy(&filter->fill_source_name, fill_source_name);
+
+	filter->has_fill_source = (fill_source_name && strlen(fill_source_name));
+
+	if (filter->has_fill_source) {
+		load_fill_source(filter);
 	} else {
-		if (filter->fill_source_source) {
-			obs_weak_source_release(filter->fill_source_source);
-		}
 		filter->fill_source_source = NULL;
 	}
 
 	if (filter->is_source) {
 		const char *stroke_source_name =
 			obs_data_get_string(settings, "stroke_source");
-		obs_source_t *stroke_source =
-			(stroke_source_name && strlen(stroke_source_name))
-				? obs_get_source_by_name(stroke_source_name)
-				: NULL;
-		if (stroke_source) {
-			obs_weak_source_release(filter->source_input_source);
-			filter->source_input_source =
-				obs_source_get_weak_source(stroke_source);
-			filter->width =
-				(uint32_t)obs_source_get_width(stroke_source);
-			filter->height =
-				(uint32_t)obs_source_get_height(stroke_source);
-			obs_source_release(stroke_source);
+
+		dstr_copy(&filter->source_name, stroke_source_name);
+
+		filter->has_source = (stroke_source_name && strlen(stroke_source_name));
+
+		if (filter->has_source) {
+			load_source(filter);
 		} else {
 			filter->source_input_source = NULL;
 			filter->width = (uint32_t)0;
@@ -275,6 +270,46 @@ static void stroke_filter_update(void *data, obs_data_t *settings)
 	if (filter->reload) {
 		filter->reload = false;
 		load_effects(filter);
+	}
+}
+
+void load_fill_source(stroke_filter_data_t* filter)
+{
+	obs_source_t* fill_source = filter->has_fill_source
+		? obs_get_source_by_name(filter->fill_source_name.array)
+		: NULL;
+	if (fill_source) {
+		obs_weak_source_release(filter->fill_source_source);
+		filter->fill_source_source =
+			obs_source_get_weak_source(fill_source);
+		obs_source_release(fill_source);
+	}
+	else {
+		if (filter->fill_source_source) {
+			obs_weak_source_release(filter->fill_source_source);
+		}
+		filter->fill_source_source = NULL;
+	}
+}
+
+void load_source(stroke_filter_data_t* filter)
+{
+	obs_source_t* stroke_source = filter->has_source
+		? obs_get_source_by_name(filter->source_name.array)
+		: NULL;
+	if (stroke_source) {
+		obs_weak_source_release(filter->source_input_source);
+		filter->source_input_source =
+			obs_source_get_weak_source(stroke_source);
+		filter->width =
+			(uint32_t)obs_source_get_width(stroke_source);
+		filter->height =
+			(uint32_t)obs_source_get_height(stroke_source);
+		obs_source_release(stroke_source);
+	} else {
+		filter->source_input_source = NULL;
+		filter->width = (uint32_t)0;
+		filter->height = (uint32_t)0;
 	}
 }
 
@@ -545,6 +580,15 @@ static void stroke_filter_video_tick(void *data, float seconds)
 {
 	UNUSED_PARAMETER(seconds);
 	stroke_filter_data_t *filter = data;
+
+	if (filter->has_fill_source && filter->fill_source_source == NULL) {
+		load_fill_source(filter);
+	}
+
+	if (filter->is_source && filter->has_source && filter->source_input_source == NULL) {
+		load_source(filter);
+	}
+
 	if (filter->is_filter) {
 		obs_source_t *target = obs_filter_get_target(filter->context);
 		if (!target) {

@@ -264,10 +264,10 @@ void glow_render_cropped_output(glow_filter_data_t* data)
 		int base_height = data->height;
 
 		const bool previous = gs_framebuffer_srgb_enabled();
-		if (data->fill_type == GLOW_FILL_TYPE_COLOR) {
-			const bool linear_srgb = gs_get_linear_srgb() || data->glow_color.w < 1.0f;
-			gs_enable_framebuffer_srgb(linear_srgb);
-		}
+		//if (data->fill_type == GLOW_FILL_TYPE_COLOR) {
+		//	const bool linear_srgb = gs_get_linear_srgb() || data->glow_color.w < 1.0f;
+		//	gs_enable_framebuffer_srgb(linear_srgb);
+		//}
 
 		if (data->glow_position == GLOW_POSITION_INNER) {
 			data->width = data->width - data->pad_l - data->pad_r;
@@ -311,38 +311,15 @@ void glow_render_cropped_output(glow_filter_data_t* data)
 		gs_technique_end(tech);
 
 		gs_enable_framebuffer_srgb(previous);
-	}
-	else {
-
-		const enum gs_color_space preferred_spaces[] = {
-				GS_CS_SRGB,
-				GS_CS_SRGB_16F,
-				GS_CS_709_EXTENDED,
-		};
-
-		const enum gs_color_space source_space =
-			obs_source_get_color_space(
-				obs_filter_get_target(data->context),
-				OBS_COUNTOF(preferred_spaces),
-				preferred_spaces);
-
-		const enum gs_color_format format =
-			gs_get_format_from_space(source_space);
-
-		if (!obs_source_process_filter_begin_with_color_space(
-			data->context, format, source_space,
-			OBS_NO_DIRECT_RENDERING)) {
-			return;
-		}
-
+	} else {
 		gs_texture_t* texture =
 			gs_texrender_get_texture(data->output_texrender);
 
 		gs_eparam_t* image = gs_effect_get_param_by_name(effect, "output_image");
 		gs_effect_set_texture(image, texture);
 
-		int output_width = data->source_width + data->pad_l + data->pad_r;
-		int output_height = data->source_height + data->pad_t + data->pad_b;
+		uint32_t output_width = data->source_width + data->pad_l + data->pad_r;
+		uint32_t output_height = data->source_height + data->pad_t + data->pad_b;
 
 		data->mul_val.x = 1.0;
 		data->mul_val.y = 1.0;
@@ -358,8 +335,18 @@ void glow_render_cropped_output(glow_filter_data_t* data)
 		}
 
 		const char* technique = "DrawOutput";
-		obs_source_process_filter_tech_end(data->context, effect,
-			output_width, output_height, technique);
+
+		//const bool previous = gs_framebuffer_srgb_enabled();
+		//if (data->fill_type == GLOW_FILL_TYPE_COLOR) {
+		//	const bool linear_srgb = gs_get_linear_srgb() || data->glow_color.w < 1.0f;
+		//	gs_enable_framebuffer_srgb(linear_srgb);
+		//}
+
+		while (gs_effect_loop(effect, technique)) {
+			gs_draw_sprite(texture, 0, output_width, output_height);
+		}
+
+		//gs_enable_framebuffer_srgb(previous);
 	}
 }
 
@@ -499,7 +486,7 @@ void render_glow_filter(glow_filter_data_t *data)
 	}
 
 	data->output_texrender =
-		create_or_reset_texrender(data->output_texrender);
+		create_or_reset_texrender_high2(data->output_texrender);
 
 	bool fill_color =
 		(data->fill_type == GLOW_FILL_TYPE_COLOR) ||
@@ -516,14 +503,21 @@ void render_glow_filter(glow_filter_data_t *data)
 	snprintf(shader_id, sizeof(shader_id), "%s%s", position, fill_type);
 
 	set_blending_parameters();
-
+	//const bool previous = gs_framebuffer_srgb_enabled();
+	//if (data->fill_type == GLOW_FILL_TYPE_COLOR) {
+	//	const bool linear_srgb = gs_get_linear_srgb() || data->glow_color.w < 1.0f;
+	//	gs_enable_framebuffer_srgb(linear_srgb);
+	//}
 	if (gs_texrender_begin(data->output_texrender, data->width, data->height)) {
 		gs_ortho(0.0f, (float)data->width, 0.0f, (float)data->height,
 	 		 -100.0f, 100.0f);
+
+
 	 	while (gs_effect_loop(effect, shader_id))
 	 		gs_draw_sprite(NULL, 0, data->width,
 	 			       data->height);
 	 	gs_texrender_end(data->output_texrender);
+		//gs_enable_framebuffer_srgb(previous);
 	}
 
 	gs_blend_state_pop();

@@ -34,3 +34,5 @@ static bool setting_stroke_position_modified(void *data,
 					     obs_data_t *settings);
 static bool setting_stroke_padding_modified(obs_properties_t* props,
 	obs_property_t* p, obs_data_t* settings);
+void load_fill_source(stroke_filter_data_t* filter);
+void load_source(stroke_filter_data_t* filter);

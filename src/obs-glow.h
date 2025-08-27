@@ -3,6 +3,7 @@
 #include <obs-module.h>
 #include "blur/alpha-blur.h"
 #include "defines.h"
+#include <util/dstr.h>
 
 // Default glow color: white in ABGR
 #define DEFAULT_COLOR_GLOW 0xFFFFFFFF
@@ -49,6 +50,9 @@ struct glow_filter_data {
 	enum filter_type filter_type;
 	obs_source_t *context;
 	alpha_blur_data_t *alpha_blur_data;
+
+	struct dstr fill_source_name;
+	struct dstr source_name;
 
 	obs_weak_source_t *source_input_source;
 
@@ -100,6 +104,9 @@ struct glow_filter_data {
 	struct vec4 glow_color_srgb;
 	enum glow_fill_type fill_type;
 	obs_weak_source_t *fill_source_source;
+	bool has_fill_source;
+
+	bool has_source;
 
 	enum glow_position glow_position;
 

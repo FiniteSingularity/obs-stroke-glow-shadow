@@ -10,6 +10,7 @@
 
 extern gs_texrender_t* create_or_reset_texrender(gs_texrender_t *render);
 extern gs_texrender_t* create_or_reset_texrender_high(gs_texrender_t* render);
+gs_texrender_t* create_or_reset_texrender_high2(gs_texrender_t* render);
 extern void set_blending_parameters();
 extern void set_render_parameters();
 extern bool add_source_to_list(void *data, obs_source_t *source);

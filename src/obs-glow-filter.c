@@ -100,6 +100,8 @@ static glow_filter_data_t *filter_create(obs_source_t *source)
 {
 	glow_filter_data_t *filter = bzalloc(sizeof(glow_filter_data_t));
 
+	dstr_init_copy(&filter->fill_source_name, "");
+	dstr_init_copy(&filter->source_name, "");
 	filter->context = source;
 	filter->input_texture_generated = false;
 	filter->alpha_blur_data = bzalloc(sizeof(alpha_blur_data_t));
@@ -159,6 +161,9 @@ static void glow_filter_destroy(void *data)
 
 	alpha_blur_destroy(filter->alpha_blur_data);
 
+	dstr_free(&filter->fill_source_name);
+	dstr_free(&filter->source_name);
+
 	obs_leave_graphics();
 	bfree(filter->alpha_blur_data);
 	bfree(filter);
@@ -211,19 +216,13 @@ static void glow_filter_update(void *data, obs_data_t *settings)
 	if (filter->is_source) {
 		const char *glow_source_name =
 			obs_data_get_string(settings, "glow_source");
-		obs_source_t *glow_source =
-			(glow_source_name && strlen(glow_source_name))
-				? obs_get_source_by_name(glow_source_name)
-				: NULL;
-		if (glow_source) {
-			obs_weak_source_release(filter->source_input_source);
-			filter->source_input_source =
-				obs_source_get_weak_source(glow_source);
-			filter->width =
-				(uint32_t)obs_source_get_width(glow_source);
-			filter->height =
-				(uint32_t)obs_source_get_height(glow_source);
-			obs_source_release(glow_source);
+
+		dstr_copy(&filter->source_name, glow_source_name);
+
+		filter->has_source = (glow_source_name && strlen(glow_source_name));
+
+		if (filter->has_source) {
+			load_glow_source(filter);
 		} else {
 			filter->source_input_source = NULL;
 			filter->width = (uint32_t)0;
@@ -275,24 +274,64 @@ static void glow_filter_update(void *data, obs_data_t *settings)
 		filter->offset_texel.y = 0.0f;
 	}
 
-	const char *fill_source_name =
+	const char* fill_source_name =
 		obs_data_get_string(settings, "glow_fill_source");
-	obs_source_t *fill_source =
-		(fill_source_name && strlen(fill_source_name))
-			? obs_get_source_by_name(fill_source_name)
-			: NULL;
-	if (fill_source) {
-		obs_weak_source_release(filter->fill_source_source);
-		filter->fill_source_source =
-			obs_source_get_weak_source(fill_source);
-		obs_source_release(fill_source);
-	} else {
+
+	dstr_copy(&filter->fill_source_name, fill_source_name);
+
+	filter->has_fill_source = (fill_source_name && strlen(fill_source_name));
+
+	if (filter->has_fill_source) {
+		load_glow_fill_source(filter);
+	}
+	else {
 		filter->fill_source_source = NULL;
 	}
 
 	if (filter->reload) {
 		filter->reload = false;
 		load_effects(filter);
+	}
+}
+
+void load_glow_fill_source(glow_filter_data_t* filter)
+{
+	obs_source_t* fill_source = filter->has_fill_source
+		? obs_get_source_by_name(filter->fill_source_name.array)
+		: NULL;
+	if (fill_source) {
+		obs_weak_source_release(filter->fill_source_source);
+		filter->fill_source_source =
+			obs_source_get_weak_source(fill_source);
+		obs_source_release(fill_source);
+	}
+	else {
+		if (filter->fill_source_source) {
+			obs_weak_source_release(filter->fill_source_source);
+		}
+		filter->fill_source_source = NULL;
+	}
+}
+
+void load_glow_source(glow_filter_data_t* filter)
+{
+	obs_source_t* glow_source = filter->has_source
+		? obs_get_source_by_name(filter->source_name.array)
+		: NULL;
+
+	if (glow_source) {
+		obs_weak_source_release(filter->source_input_source);
+		filter->source_input_source =
+			obs_source_get_weak_source(glow_source);
+		filter->width =
+			(uint32_t)obs_source_get_width(glow_source);
+		filter->height =
+			(uint32_t)obs_source_get_height(glow_source);
+		obs_source_release(glow_source);
+	} else {
+		filter->source_input_source = NULL;
+		filter->width = (uint32_t)0;
+		filter->height = (uint32_t)0;
 	}
 }
 
@@ -337,6 +376,10 @@ static void glow_filter_video_render(void *data, gs_effect_t *effect)
 	//    threshold input.
 	render_glow_alpha_mask(filter);
 
+	//gs_texrender_t* tmp = filter->alpha_mask_texrender;
+	//filter->alpha_mask_texrender = filter->output_texrender;
+	//filter->output_texrender = tmp;
+
 	// 3. Apply effect to texture, and render texture to video
 	if (filter->blur_type == BLUR_TYPE_TRIANGULAR) {
 		alpha_blur(filter->glow_size, filter->ignore_source_border,
@@ -348,6 +391,10 @@ static void glow_filter_video_render(void *data, gs_effect_t *effect)
 				 filter->alpha_blur_data,
 				 filter->alpha_mask_texrender);
 	}
+
+	//gs_texrender_t* tmp = filter->alpha_blur_data->alpha_blur_output;
+	//filter->alpha_blur_data->alpha_blur_output = filter->output_texrender;
+	//filter->output_texrender = tmp;
 
 	// 4. Render glow effect to output
 	render_glow_filter(filter);
@@ -555,6 +602,15 @@ static void glow_filter_video_tick(void *data, float seconds)
 {
 	UNUSED_PARAMETER(seconds);
 	glow_filter_data_t *filter = data;
+
+	if (filter->has_fill_source && filter->fill_source_source == NULL) {
+		load_glow_fill_source(filter);
+	}
+
+	if (filter->is_source && filter->has_source && filter->source_input_source == NULL) {
+		load_glow_source(filter);
+	}
+
 	if (filter->is_filter) {
 		obs_source_t *target = obs_filter_get_target(filter->context);
 		if (!target) {
