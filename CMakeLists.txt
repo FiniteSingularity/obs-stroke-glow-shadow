@@ -6,7 +6,7 @@ else()
   cmake_minimum_required(VERSION 3.18)
 endif()
 
-project(obs-stroke-glow-shadow VERSION 1.5.2)
+project(obs-stroke-glow-shadow VERSION 1.5.3)
 set(PROJECT_FULL_NAME "Stroke Glow Shadow")
 
 # Set new UUIDs when you start to create a new plugin.
