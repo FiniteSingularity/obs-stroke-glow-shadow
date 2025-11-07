@@ -142,7 +142,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ubuntu: ["ubuntu-20.04", "ubuntu-22.04"]
+        ubuntu: ["ubuntu-22.04"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4.1.1
@@ -191,14 +191,11 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        target: [x64, x86]
+        target: [x64]
         include:
           - target: x64
             cmake_build: "x64"
             deps_ext: "64"
-          - target: x86
-            cmake_build: "Win32"
-            deps_ext: "32"
     env:
       QT_VERSION: "6.3.1"
       CMAKE_GENERATOR: "Visual Studio 17 2022"
