@@ -393,36 +393,6 @@ void render_glow_alpha_mask(glow_filter_data_t* data)
 	gs_blend_state_pop();
 }
 
-void render_glow_alpha_mask(glow_filter_data_t* data)
-{
-	gs_effect_t* effect = data->effect_glow;
-	gs_texture_t* input_texture = gs_texrender_get_texture(data->input_texrender);
-
-	gs_eparam_t* image = gs_effect_get_param_by_name(effect, "image");
-	gs_effect_set_texture(image, input_texture);
-
-	if (data->param_threshold) {
-		gs_effect_set_float(data->param_threshold,
-			data->threshold);
-	}
-
-	data->alpha_mask_texrender =
-		create_or_reset_texrender(data->alpha_mask_texrender);
-
-	set_blending_parameters();
-
-	if (gs_texrender_begin(data->alpha_mask_texrender, data->width, data->height)) {
-		gs_ortho(0.0f, (float)data->width, 0.0f, (float)data->height,
-			-100.0f, 100.0f);
-		while (gs_effect_loop(effect, "ThresholdMask"))
-			gs_draw_sprite(NULL, 0, data->width,
-				data->height);
-		gs_texrender_end(data->alpha_mask_texrender);
-	}
-
-	gs_blend_state_pop();
-}
-
 void render_glow_filter(glow_filter_data_t *data)
 {
 	gs_effect_t *effect = data->effect_glow;
