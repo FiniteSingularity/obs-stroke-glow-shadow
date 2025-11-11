@@ -98,5 +98,27 @@ A stroke, glow, or shadow can be filled using either a solid color or a source.
 1. **Color**- Represents an RGBA color. The alpha channel can be used to create a lower opacity result, allowing the background to show through.
 2. **Source**- Refers to a different OBS Source. This can be anything from a media source to a fully filtered and rendered scene.
 
+### For Ubuntu
+
+#### With GUI
+
+- Download the Ubuntu .tar.gz for your Ubuntu version (currently 20.04 and 22.04 are supported)
+- Extract the .tar.gz to a handy location.
+- Using your file manager, navigate to `~/.config/obs-studio/`
+- Then navigate into the `plugins` folder or create it if it does not exist.
+- Drop the `obs-stroke` folder into the plugins directory.
+- (Re)start OBS and now you should be able to add the Stroke filter.
+
+#### With Terminal
+
+(Replace XX with either 20 or 22 for Ubuntus 20.04 & 22.04)
+```bash
+wget https://github.com/FiniteSingularity/obs-stroke-glow-shadow/releases/download/v1.0.2/obs-stroke-0.0.1a-ubuntu-XX.04.tar.gz.zip
+unzip obs-stroke-0.0.1a-ubuntu-XX.04.tar.gz.zip
+tar -zxf obs-stroke-(DATE)-(HASH)-ubuntu-XX.04.tar.gz
+mkdir ~/.config/obs-studio/plugins
+mv obs-stroke ~/.config/obs-studio/plugins
+```
+
 ## Source vs. Filter
 This plugin provides all three effects as both filters that can be applied to an existing source and as sources that can be added to your scenes. When used as a filter, the effect is drawn, with the filtered source rendering in front of (for outside effects) or behind (for inside effects) the rendered effect. When used as a source, the user selects another source whose alpha mask will be used to calculate the effect, and the effect will be drawn on its own without rendering the original source. Using a source effect has the advantage of not affecting the original masked source, and the resulting stroke, glow, or shadow can have its own filters applied to it. Additionally, the user has more control over how the effect is layered and the blending method used for compositing. Using the filter effect combines both the effect and the original source, making it easier to transform together when placed in a scene.
