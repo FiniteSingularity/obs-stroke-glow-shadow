@@ -1,0 +1,16 @@
+{
+    "display_name": "Stroke Glow Shadow",
+    "id": "9da250e8-8bee-46a1-9d79-d0c792478df9",
+    "version": "1.6.0",
+    "authors": ["FiniteSingularity"],
+    "name": "obs-stroke-glow-shadow",
+    "description": "A plugin that provides stroke, glow, and shadow filters and sources for OBS.",
+    "long_description": "Provides stroke, glow, and shadow sources and filters for OBS.",
+    "urls": {
+        "repository": "https://github.com/FiniteSingularity/obs-stroke-glow-shadow",
+        "website": "https://f15y.com",
+        "support": "https://github.com/FiniteSingularity/obs-stroke-glow-shadow/issues"
+    },
+    "has_banner": false,
+    "has_icon": false
+}
