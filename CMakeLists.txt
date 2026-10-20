@@ -37,27 +37,27 @@ endif()
 target_sources(
   ${PROJECT_NAME}
   PRIVATE
-	src/anti-alias.c
-	src/anti-alias.h
-	src/glow.c
-	src/glow.h
-	src/obs-glow-filter.c
-	src/obs-glow-filter.h
-	src/obs-glow.h
-	src/obs-stroke-filter.c
-	src/obs-stroke-plugin.c
-	src/obs-stroke-filter.h
-	src/obs-stroke.h
-	src/obs-utils.c
-	src/obs-utils.h
-	src/stroke.c
-	src/stroke.h
-	src/defines.h
-	src/version.h
-	src/blur/alpha-blur.c
-	src/blur/alpha-blur.h
-	src/blur/dual-kawase.c
-	src/blur/dual-kawase.h
+    src/anti-alias.c
+    src/anti-alias.h
+    src/glow.c
+    src/glow.h
+    src/obs-glow-filter.c
+    src/obs-glow-filter.h
+    src/obs-glow.h
+    src/obs-stroke-filter.c
+    src/obs-stroke-plugin.c
+    src/obs-stroke-filter.h
+    src/obs-stroke.h
+    src/obs-utils.c
+    src/obs-utils.h
+    src/stroke.c
+    src/stroke.h
+    src/defines.h
+    src/version.h
+    src/blur/alpha-blur.c
+    src/blur/alpha-blur.h
+    src/blur/dual-kawase.c
+    src/blur/dual-kawase.h
 )
 
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})
