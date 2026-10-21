@@ -97,7 +97,7 @@ float4 drawOutput(VertData v_in) : TARGET
 float4 mainImageThresholdMask(VertData v_in) : TARGET
 {
 	float4 color = image.Sample(textureSampler, v_in.uv);
-	return float4(clamp(color.a / threshold, 0.0, 1.0), 0.0, 0.0, 1.0)
+	return float4(clamp(color.a / threshold, 0.0, 1.0), 0.0, 0.0, 1.0);
 }
 
 float4 mainImageOuterGlowColor(VertData v_in) : TARGET
