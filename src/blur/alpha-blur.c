@@ -78,7 +78,7 @@ void alpha_blur(float radius, bool ignore_border, alpha_blur_data_t *data, gs_te
 	uint32_t height = gs_texture_get_height(texture);
 	// 1. First pass- apply 1D blur kernel to horizontal dir.
 	data->alpha_blur_pass_1 =
-		create_or_reset_texrender(data->alpha_blur_pass_1);
+		create_or_reset_texrender_format(data->alpha_blur_pass_1, GS_R16F);
 
 	gs_eparam_t *image = gs_effect_get_param_by_name(effect, "image");
 	gs_effect_set_texture(image, texture);
@@ -119,7 +119,8 @@ void alpha_blur(float radius, bool ignore_border, alpha_blur_data_t *data, gs_te
 		gs_effect_set_vec2(data->param_blur_texel_step, &texel_step);
 	}
 
-	output = create_or_reset_texrender(output);
+	output = create_or_reset_texrender_format(output, GS_R16F);
+	data->alpha_blur_output = output;
 
 	if (gs_texrender_begin(output, width, height)) {
 		gs_ortho(0.0f, (float)width, 0.0f, (float)height,

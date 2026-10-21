@@ -21,6 +21,21 @@ gs_texrender_t* create_or_reset_texrender_high(gs_texrender_t* render)
 	return render;
 }
 
+gs_texrender_t *create_or_reset_texrender_format(gs_texrender_t *render,
+						 enum gs_color_format format)
+{
+	if (render && gs_texrender_get_format(render) != format) {
+		gs_texrender_destroy(render);
+		render = NULL;
+	}
+	if (!render) {
+		render = gs_texrender_create(format, GS_ZS_NONE);
+	} else {
+		gs_texrender_reset(render);
+	}
+	return render;
+}
+
 void set_blending_parameters()
 {
 	gs_blend_state_push();

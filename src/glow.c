@@ -242,18 +242,6 @@ void glow_render_cropped_output(glow_filter_data_t* data)
 {
 	gs_effect_t* effect = data->effect_glow;
 	if (data->is_source) {
-		//gs_texture_t* texture =
-		//	gs_texrender_get_texture(data->output_texrender);
-		//gs_effect_t* pass_through =
-		//	obs_get_base_effect(OBS_EFFECT_DEFAULT);
-		//gs_eparam_t* param =
-		//	gs_effect_get_param_by_name(pass_through, "image");
-		//gs_effect_set_texture(param, texture);
-		//uint32_t width = gs_texture_get_width(texture);
-		//uint32_t height = gs_texture_get_height(texture);
-		//while (gs_effect_loop(pass_through, "Draw")) {
-		//	gs_draw_sprite(texture, 0, width, height);
-		//}
 		gs_texture_t* texture =
 			gs_texrender_get_texture(data->output_texrender);
 		gs_eparam_t* param =
@@ -264,10 +252,10 @@ void glow_render_cropped_output(glow_filter_data_t* data)
 		int base_height = data->height;
 
 		const bool previous = gs_framebuffer_srgb_enabled();
-		if (data->fill_type == GLOW_FILL_TYPE_COLOR) {
-			const bool linear_srgb = gs_get_linear_srgb() || data->glow_color.w < 1.0f;
-			gs_enable_framebuffer_srgb(linear_srgb);
-		}
+		const bool linear_srgb =
+			gs_get_linear_srgb() ||
+			(data->fill_type == GLOW_FILL_TYPE_COLOR && data->glow_color.w < 1.0f);
+		gs_enable_framebuffer_srgb(linear_srgb);
 
 		if (data->glow_position == GLOW_POSITION_INNER) {
 			data->width = data->width - data->pad_l - data->pad_r;
@@ -294,13 +282,29 @@ void glow_render_cropped_output(glow_filter_data_t* data)
 			gs_effect_set_vec2(data->param_add_val, &data->add_val);
 		}
 
-		//uint32_t width = gs_texture_get_width(texture);
-		//uint32_t height = gs_texture_get_height(texture);
-		
 
-		//while (gs_effect_loop(effect, "DrawOutput")) {
-		//	gs_draw_sprite(texture, 0, data->width, data->height);
-		//}
+		struct vec2 dither_dims;
+		vec2_set(&dither_dims, (float)data->width, (float)data->height);
+		gs_eparam_t* param_dither_size =
+			gs_effect_get_param_by_name(effect, "dither_size");
+		if (param_dither_size) {
+			gs_effect_set_vec2(param_dither_size, &dither_dims);
+		}
+
+		const bool color_fill = data->fill_type == GLOW_FILL_TYPE_COLOR;
+		const float content_linear = (color_fill && linear_srgb) ? 1.0f : 0.0f;
+		const float decode_output = (!color_fill && linear_srgb) ? 1.0f : 0.0f;
+		gs_eparam_t* param_content_linear =
+			gs_effect_get_param_by_name(effect, "content_linear");
+		if (param_content_linear) {
+			gs_effect_set_float(param_content_linear, content_linear);
+		}
+		gs_eparam_t* param_decode_output =
+			gs_effect_get_param_by_name(effect, "decode_output");
+		if (param_decode_output) {
+			gs_effect_set_float(param_decode_output, decode_output);
+		}
+
 		gs_technique_t* tech = gs_effect_get_technique(effect, "DrawOutput");
 		gs_technique_begin(tech);
 		gs_technique_begin_pass(tech, 0);
@@ -357,6 +361,14 @@ void glow_render_cropped_output(glow_filter_data_t* data)
 			gs_effect_set_vec2(data->param_add_val, &data->add_val);
 		}
 
+		struct vec2 dither_dims;
+		vec2_set(&dither_dims, (float)output_width, (float)output_height);
+		gs_eparam_t* param_dither_size =
+			gs_effect_get_param_by_name(effect, "dither_size");
+		if (param_dither_size) {
+			gs_effect_set_vec2(param_dither_size, &dither_dims);
+		}
+
 		const char* technique = "DrawOutput";
 		obs_source_process_filter_tech_end(data->context, effect,
 			output_width, output_height, technique);
@@ -377,7 +389,8 @@ void render_glow_alpha_mask(glow_filter_data_t* data)
 	}
 
 	data->alpha_mask_texrender =
-		create_or_reset_texrender(data->alpha_mask_texrender);
+		create_or_reset_texrender_format(data->alpha_mask_texrender,
+						  GS_R16F);
 
 	set_blending_parameters();
 
@@ -494,12 +507,16 @@ void render_glow_filter(glow_filter_data_t *data)
 		}
 	} else if (data->fill_type == GLOW_FILL_TYPE_COLOR &&
 	    data->param_glow_fill_color) {
-		gs_effect_set_vec4(data->param_glow_fill_color,
-			linear_srgb ? &data->glow_color_srgb : &data->glow_color);
+		const struct vec4 *fill_color =
+			data->is_filter ? &data->glow_color
+					: (linear_srgb ? &data->glow_color_srgb
+						       : &data->glow_color);
+		gs_effect_set_vec4(data->param_glow_fill_color, fill_color);
 	}
 
 	data->output_texrender =
-		create_or_reset_texrender(data->output_texrender);
+		create_or_reset_texrender_format(data->output_texrender,
+						  GS_RGBA16F);
 
 	bool fill_color =
 		(data->fill_type == GLOW_FILL_TYPE_COLOR) ||

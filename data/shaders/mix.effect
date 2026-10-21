@@ -25,10 +25,10 @@ VertData mainTransform(VertData v_in)
 
 float4 mainImage(VertData v_in) : TARGET
 {
-    // 1. Sample incoming pixel
-    float4 c1 = image.Sample(textureSampler, v_in.uv);
-    float4 c2 = image2.Sample(textureSampler, v_in.uv);
-    return lerp(c1, c2, float4(ratio, ratio, ratio, ratio));
+    float c1 = image.Sample(textureSampler, v_in.uv).r;
+    float c2 = image2.Sample(textureSampler, v_in.uv).r;
+    float retVal = lerp(c1, c2, ratio);
+    return float4(retVal, 0.0, 0.0, 1.0);
 }
 
 technique Draw

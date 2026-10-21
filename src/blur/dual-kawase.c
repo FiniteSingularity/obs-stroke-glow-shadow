@@ -17,7 +17,8 @@ static gs_texture_t *down_sample(alpha_blur_data_t *data,
 	data->render = data->render2;
 	data->render2 = tmp;
 
-	data->render = create_or_reset_texrender(data->render);
+	data->render = create_or_reset_texrender_format(data->render,
+							 GS_R16F);
 
 	uint32_t w = width / divisor;
 	uint32_t h = height / divisor;
@@ -51,7 +52,8 @@ static gs_texture_t *up_sample(alpha_blur_data_t *data,
 	data->render = data->render2;
 	data->render2 = tmp;
 
-	data->render = create_or_reset_texrender(data->render);
+	data->render = create_or_reset_texrender_format(data->render,
+							 GS_R16F);
 
 	uint32_t start_w = gs_texture_get_width(input_texture);
 	uint32_t start_h = gs_texture_get_height(input_texture);
@@ -87,7 +89,8 @@ gs_texture_t *mix_textures(alpha_blur_data_t *data,
 	data->render = data->render2;
 	data->render2 = tmp;
 
-	data->render = create_or_reset_texrender(data->render);
+	data->render = create_or_reset_texrender_format(data->render,
+							 GS_R16F);
 
 	uint32_t w = gs_texture_get_width(base);
 	uint32_t h = gs_texture_get_height(base);
@@ -122,7 +125,7 @@ void dual_kawase_blur(int radius, bool include_border,
 	gs_texture_t *texture = gs_texrender_get_texture(input);
 	if (radius <= 1) {
 		data->alpha_blur_output =
-			create_or_reset_texrender(data->alpha_blur_output);
+			create_or_reset_texrender_format(data->alpha_blur_output, GS_R16F);
 		texrender_set_texture(texture, data->alpha_blur_output);
 		return;
 	}
@@ -169,7 +172,7 @@ void dual_kawase_blur(int radius, bool include_border,
 	gs_blend_state_pop();
 
 	data->alpha_blur_output =
-		create_or_reset_texrender(data->alpha_blur_output);
+		create_or_reset_texrender_format(data->alpha_blur_output, GS_R16F);
 	texrender_set_texture(texture, data->alpha_blur_output);
 	// Destroy base_render if used (if there was a residual)
 	if (base_render) {
