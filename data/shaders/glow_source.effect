@@ -130,7 +130,7 @@ float4 mainImageOuterGlowSource(VertData v_in) : TARGET
 	float4 color = image.Sample(textureSampler, v_in.uv);
 	float4 fill_col = srgb_nonlinear_to_linear(glow_fill_source.Sample(textureSampler, v_in.uv));
 	fill_col.rgb *= (fill_col.a > 0.) ? (1. / fill_col.a) : 0.;
-	fill_col = srgb_linear_to_nonlinear(fill_color);
+	fill_col = srgb_linear_to_nonlinear(fill_col);
 	float4 glow = float4(fill_col.rgb, clamp(fill_col.a * intensity * mask_alpha.r, 0.0f, 1.0f));
 	float blend_mask = clamp(step(threshold, color.a) + step(glow.a, 0.0001), 0.0, 1.0);
 	return fill_behind * glow + (1.0 - fill_behind) * (1.0 - blend_mask) * float4(glow.rgb, glow.a * step(color.a, threshold) * (1.0 - color.a));
