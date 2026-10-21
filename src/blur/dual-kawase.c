@@ -8,8 +8,8 @@ void load_effect_dual_kawase(alpha_blur_data_t *filter)
 }
 
 static gs_texture_t *down_sample(alpha_blur_data_t *data,
-			  gs_texture_t *input_texture, int divisor, float ratio,
-			  uint32_t width, uint32_t height)
+				 gs_texture_t *input_texture, int divisor,
+				 float ratio, uint32_t width, uint32_t height)
 {
 	gs_effect_t *effect_down = data->effect_dual_kawase_downsample;
 	// Swap renderers
@@ -17,8 +17,7 @@ static gs_texture_t *down_sample(alpha_blur_data_t *data,
 	data->render = data->render2;
 	data->render2 = tmp;
 
-	data->render = create_or_reset_texrender_format(data->render,
-							 GS_R16F);
+	data->render = create_or_reset_texrender_format(data->render, GS_R16F);
 
 	uint32_t w = width / divisor;
 	uint32_t h = height / divisor;
@@ -43,8 +42,8 @@ static gs_texture_t *down_sample(alpha_blur_data_t *data,
 }
 
 static gs_texture_t *up_sample(alpha_blur_data_t *data,
-			gs_texture_t *input_texture, int divisor, float ratio,
-			uint32_t width, uint32_t height)
+			       gs_texture_t *input_texture, int divisor,
+			       float ratio, uint32_t width, uint32_t height)
 {
 	gs_effect_t *effect_up = data->effect_dual_kawase_upsample;
 	// Swap renderers
@@ -52,8 +51,7 @@ static gs_texture_t *up_sample(alpha_blur_data_t *data,
 	data->render = data->render2;
 	data->render2 = tmp;
 
-	data->render = create_or_reset_texrender_format(data->render,
-							 GS_R16F);
+	data->render = create_or_reset_texrender_format(data->render, GS_R16F);
 
 	uint32_t start_w = gs_texture_get_width(input_texture);
 	uint32_t start_h = gs_texture_get_height(input_texture);
@@ -79,9 +77,8 @@ static gs_texture_t *up_sample(alpha_blur_data_t *data,
 	return gs_texrender_get_texture(data->render);
 }
 
-gs_texture_t *mix_textures(alpha_blur_data_t *data,
-			   gs_texture_t *base, gs_texture_t *residual,
-			   float ratio)
+gs_texture_t *mix_textures(alpha_blur_data_t *data, gs_texture_t *base,
+			   gs_texture_t *residual, float ratio)
 {
 	gs_effect_t *effect = data->effect_dual_kawase_mix;
 	// Swap renderers
@@ -89,8 +86,7 @@ gs_texture_t *mix_textures(alpha_blur_data_t *data,
 	data->render = data->render2;
 	data->render2 = tmp;
 
-	data->render = create_or_reset_texrender_format(data->render,
-							 GS_R16F);
+	data->render = create_or_reset_texrender_format(data->render, GS_R16F);
 
 	uint32_t w = gs_texture_get_width(base);
 	uint32_t h = gs_texture_get_height(base);
@@ -106,7 +102,6 @@ gs_texture_t *mix_textures(alpha_blur_data_t *data,
 	if (data->param_mix_ratio) {
 		gs_effect_set_float(data->param_mix_ratio, ratio);
 	}
-	
 
 	if (gs_texrender_begin(data->render, w, h)) {
 		gs_ortho(0.0f, (float)w, 0.0f, (float)h, -100.0f, 100.0f);
@@ -117,15 +112,14 @@ gs_texture_t *mix_textures(alpha_blur_data_t *data,
 	return gs_texrender_get_texture(data->render);
 }
 
-void dual_kawase_blur(int radius, bool include_border,
-			     alpha_blur_data_t *data,
-			     gs_texrender_t *input)
+void dual_kawase_blur(int radius, bool include_border, alpha_blur_data_t *data,
+		      gs_texrender_t *input)
 {
 	UNUSED_PARAMETER(include_border);
 	gs_texture_t *texture = gs_texrender_get_texture(input);
 	if (radius <= 1) {
-		data->alpha_blur_output =
-			create_or_reset_texrender_format(data->alpha_blur_output, GS_R16F);
+		data->alpha_blur_output = create_or_reset_texrender_format(
+			data->alpha_blur_output, GS_R16F);
 		texrender_set_texture(texture, data->alpha_blur_output);
 		return;
 	}
@@ -153,12 +147,14 @@ void dual_kawase_blur(int radius, bool include_border,
 		float ratio = (float)residual / (float)(next_pass - last_pass);
 
 		// Downsample one more step
-		texture = down_sample(data, texture, next_pass, 1.0, width, height);
+		texture = down_sample(data, texture, next_pass, 1.0, width,
+				      height);
 		// Extract renderer from end of down sampling loop
 		base_render = data->render2;
 		data->render2 = NULL;
 		// Upsample one more step
-		texture = up_sample(data, texture, last_pass, 1.0, width, height);
+		texture =
+			up_sample(data, texture, last_pass, 1.0, width, height);
 		gs_texture_t *base = gs_texrender_get_texture(base_render);
 		// Mix the end of the downsample loop with additional step.
 		// Use the residual ratio for mixing.
@@ -171,8 +167,8 @@ void dual_kawase_blur(int radius, bool include_border,
 
 	gs_blend_state_pop();
 
-	data->alpha_blur_output =
-		create_or_reset_texrender_format(data->alpha_blur_output, GS_R16F);
+	data->alpha_blur_output = create_or_reset_texrender_format(
+		data->alpha_blur_output, GS_R16F);
 	texrender_set_texture(texture, data->alpha_blur_output);
 	// Destroy base_render if used (if there was a residual)
 	if (base_render) {
@@ -180,20 +176,20 @@ void dual_kawase_blur(int radius, bool include_border,
 	}
 }
 
-static void
-load_dual_kawase_down_sample_effect(alpha_blur_data_t *filter)
+static void load_dual_kawase_down_sample_effect(alpha_blur_data_t *filter)
 {
 	const char *effect_file_path =
 		"/shaders/dual_kawase_down_sample.effect";
-	filter->effect_dual_kawase_downsample =
-		load_shader_effect(filter->effect_dual_kawase_downsample, effect_file_path);
+	filter->effect_dual_kawase_downsample = load_shader_effect(
+		filter->effect_dual_kawase_downsample, effect_file_path);
 	if (filter->effect_dual_kawase_downsample) {
-		size_t effect_count =
-			gs_effect_get_num_params(filter->effect_dual_kawase_downsample);
+		size_t effect_count = gs_effect_get_num_params(
+			filter->effect_dual_kawase_downsample);
 		for (size_t effect_index = 0; effect_index < effect_count;
 		     effect_index++) {
 			gs_eparam_t *param = gs_effect_get_param_by_idx(
-				filter->effect_dual_kawase_downsample, effect_index);
+				filter->effect_dual_kawase_downsample,
+				effect_index);
 			struct gs_effect_param_info info;
 			gs_effect_get_param_info(param, &info);
 			if (strcmp(info.name, "texel_step") == 0) {
@@ -206,13 +202,16 @@ load_dual_kawase_down_sample_effect(alpha_blur_data_t *filter)
 static void load_dual_kawase_up_sample_effect(alpha_blur_data_t *filter)
 {
 	const char *effect_file_path = "/shaders/dual_kawase_up_sample.effect";
-	filter->effect_dual_kawase_upsample = load_shader_effect(filter->effect_dual_kawase_upsample, effect_file_path);
+	filter->effect_dual_kawase_upsample = load_shader_effect(
+		filter->effect_dual_kawase_upsample, effect_file_path);
 	if (filter->effect_dual_kawase_upsample) {
-		size_t effect_count = gs_effect_get_num_params(filter->effect_dual_kawase_upsample);
+		size_t effect_count = gs_effect_get_num_params(
+			filter->effect_dual_kawase_upsample);
 		for (size_t effect_index = 0; effect_index < effect_count;
 		     effect_index++) {
 			gs_eparam_t *param = gs_effect_get_param_by_idx(
-				filter->effect_dual_kawase_upsample, effect_index);
+				filter->effect_dual_kawase_upsample,
+				effect_index);
 			struct gs_effect_param_info info;
 			gs_effect_get_param_info(param, &info);
 			if (strcmp(info.name, "texel_step") == 0) {
@@ -224,8 +223,7 @@ static void load_dual_kawase_up_sample_effect(alpha_blur_data_t *filter)
 
 static void load_dual_kawase_mix_effect(alpha_blur_data_t *filter)
 {
-	const char *effect_file_path =
-		"/shaders/mix.effect";
+	const char *effect_file_path = "/shaders/mix.effect";
 	filter->effect_dual_kawase_mix = load_shader_effect(
 		filter->effect_dual_kawase_mix, effect_file_path);
 	if (filter->effect_dual_kawase_mix) {
@@ -234,8 +232,7 @@ static void load_dual_kawase_mix_effect(alpha_blur_data_t *filter)
 		for (size_t effect_index = 0; effect_index < effect_count;
 		     effect_index++) {
 			gs_eparam_t *param = gs_effect_get_param_by_idx(
-				filter->effect_dual_kawase_mix,
-				effect_index);
+				filter->effect_dual_kawase_mix, effect_index);
 			struct gs_effect_param_info info;
 			gs_effect_get_param_info(param, &info);
 			if (strcmp(info.name, "image") == 0) {
