@@ -10,12 +10,26 @@ gs_texrender_t *create_or_reset_texrender(gs_texrender_t *render)
 	return render;
 }
 
-gs_texrender_t* create_or_reset_texrender_high(gs_texrender_t* render)
+gs_texrender_t *create_or_reset_texrender_high(gs_texrender_t *render)
 {
 	if (!render) {
 		render = gs_texrender_create(GS_RG32F, GS_ZS_NONE);
+	} else {
+		gs_texrender_reset(render);
 	}
-	else {
+	return render;
+}
+
+gs_texrender_t *create_or_reset_texrender_format(gs_texrender_t *render,
+						 enum gs_color_format format)
+{
+	if (render && gs_texrender_get_format(render) != format) {
+		gs_texrender_destroy(render);
+		render = NULL;
+	}
+	if (!render) {
+		render = gs_texrender_create(format, GS_ZS_NONE);
+	} else {
 		gs_texrender_reset(render);
 	}
 	return render;
@@ -87,7 +101,7 @@ gs_effect_t *load_shader_effect(gs_effect_t *effect,
 	if (effect == NULL) {
 		blog(LOG_WARNING,
 		     "[obs-stroke-glow-shadow] Unable to load %s file.  Errors:\n%s",
-			effect_file_path,
+		     effect_file_path,
 		     (errors == NULL || strlen(errors) == 0 ? "(None)"
 							    : errors));
 		bfree(errors);

@@ -39,7 +39,7 @@ float4 mainImageIgnoreBorder(VertData v_in) : TARGET
 {
     // 1. Sample incoming pixel
     float total_weight = 1.0;
-	float4 col = image.Sample(ignoreBorderTextureSampler, v_in.uv);
+	float col = image.Sample(ignoreBorderTextureSampler, v_in.uv).r;
 
     // 2. March out from source pixel.  Step by 2 pixels, and add
     //    2x the average of pixel i and i+1.  This uses GPU hardware
@@ -50,8 +50,8 @@ float4 mainImageIgnoreBorder(VertData v_in) : TARGET
         }
         float offset = float(i)+0.5f;
         float weight = lerp(1.0f, 0.0f, offset/(radius+1.0f));
-	col += 2.0f * weight * image.Sample(ignoreBorderTextureSampler, v_in.uv + (offset * texel_step));
-	col += 2.0f * weight * image.Sample(ignoreBorderTextureSampler, v_in.uv - (offset * texel_step));
+	    col += 2.0f * weight * image.Sample(ignoreBorderTextureSampler, v_in.uv + (offset * texel_step)).r;
+	    col += 2.0f * weight * image.Sample(ignoreBorderTextureSampler, v_in.uv - (offset * texel_step)).r;
         total_weight += 4.0f * weight;
     }
     // 3. Solve for the residual.  If the integer portion of radius is
@@ -64,23 +64,23 @@ float4 mainImageIgnoreBorder(VertData v_in) : TARGET
     // 4. Sample at radius - residual/2.0, and scale the resulting color
     //    by the residual.
     if(residual > EPS) {
-         float offset = radius;
-	 float weight = lerp(1.0f, 0.0f, offset / (radius + 1.0f));
-	col += weight * image.Sample(ignoreBorderTextureSampler, v_in.uv + (offset * texel_step));
-	col += weight * image.Sample(ignoreBorderTextureSampler, v_in.uv - (offset * texel_step));
-	 total_weight += 2.0f * weight;
+        float offset = radius;
+	    float weight = lerp(1.0f, 0.0f, offset / (radius + 1.0f));
+	    col += weight * image.Sample(ignoreBorderTextureSampler, v_in.uv + (offset * texel_step)).r;
+	    col += weight * image.Sample(ignoreBorderTextureSampler, v_in.uv - (offset * texel_step)).r;
+	    total_weight += 2.0f * weight;
     }
 
     // 5. Normalize the color by the total pixels sampled.
     col /= total_weight;
-    return float4(1.0, 1.0, 1.0, col.a);
+    return float4(col, 0.0, 0.0, 1.0);
 }
 
 float4 mainImageIncludeBorder(VertData v_in) : TARGET
 {
     // 1. Sample incoming pixel
     float total_weight = 1.0;
-	float4 col = image.Sample(includeBorderTextureSampler, v_in.uv);
+	float col = image.Sample(includeBorderTextureSampler, v_in.uv).r;
 
     // 2. March out from source pixel.  Step by 2 pixels, and add
     //    2x the average of pixel i and i+1.  This uses GPU hardware
@@ -91,8 +91,8 @@ float4 mainImageIncludeBorder(VertData v_in) : TARGET
         }
         float offset = float(i)+0.5f;
         float weight = lerp(1.0f, 0.0f, offset/(radius+1.0f));
-	col += 2.0f * weight * image.Sample(includeBorderTextureSampler, v_in.uv + (offset * texel_step));
-	col += 2.0f * weight * image.Sample(includeBorderTextureSampler, v_in.uv - (offset * texel_step));
+	    col += 2.0f * weight * image.Sample(includeBorderTextureSampler, v_in.uv + (offset * texel_step)).r;
+	    col += 2.0f * weight * image.Sample(includeBorderTextureSampler, v_in.uv - (offset * texel_step)).r;
         total_weight += 4.0f * weight;
     }
     // 3. Solve for the residual.  If the integer portion of radius is
@@ -105,16 +105,16 @@ float4 mainImageIncludeBorder(VertData v_in) : TARGET
     // 4. Sample at radius - residual/2.0, and scale the resulting color
     //    by the residual.
     if(residual > EPS) {
-         float offset = radius;
-	 float weight = lerp(1.0f, 0.0f, offset / (radius + 1.0f));
-	col += weight * image.Sample(includeBorderTextureSampler, v_in.uv + (offset * texel_step));
-	col += weight * image.Sample(includeBorderTextureSampler, v_in.uv - (offset * texel_step));
-	 total_weight += 2.0f * weight;
+        float offset = radius;
+	    float weight = lerp(1.0f, 0.0f, offset / (radius + 1.0f));
+	    col += weight * image.Sample(includeBorderTextureSampler, v_in.uv + (offset * texel_step)).r;
+	    col += weight * image.Sample(includeBorderTextureSampler, v_in.uv - (offset * texel_step)).r;
+	    total_weight += 2.0f * weight;
     }
 
     // 5. Normalize the color by the total pixels sampled.
     col /= total_weight;
-    return float4(1.0, 1.0, 1.0, col.a);
+    return float4(col, 0.0, 0.0, 1.0);
 }
 
 technique IgnoreBorder
