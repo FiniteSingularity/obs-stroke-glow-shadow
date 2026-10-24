@@ -1,7 +1,7 @@
 {
     "display_name": "Stroke Glow Shadow",
     "id": "9da250e8-8bee-46a1-9d79-d0c792478df9",
-    "version": "1.6.0",
+    "version": "1.6.1",
     "authors": ["FiniteSingularity"],
     "name": "obs-stroke-glow-shadow",
     "description": "A plugin that provides stroke, glow, and shadow filters and sources for OBS.",
